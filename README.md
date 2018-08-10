@@ -1,13 +1,16 @@
 
-NginZ
+NginCC
 ==========
 
-NginZ is a scalable application server. It is useful for instant messaging and audio/video communication.
+NginCC is a scalable application server written in modern `C++`. It is useful for instant messaging and audio/video communication.
+
+(There is NginZ written in `C` which is yet another application server.)
 
 Note
 ====
 
-Please update the port in `inc/nginz_config.h` to the appropriate value.
+Please update the port in `base/inc/ngincc_config.h` to the appropriate value.
+
 
 Requirements
 ============
@@ -18,7 +21,6 @@ NginZ depends on the following packages,
 - libtool
 - pkg-config
 - [check](https://libcheck.github.io/check/)
-- [Aroop Core](https://github.com/kamanashisroy/aroop_core)
 - libmemcached(not needed anymore)
 
 It it tested in Linux platform.
@@ -44,11 +46,11 @@ Features
 NginZ is equiped to serve as communication applications. It has,
 
 - [Plugin](base/plugin.md) and dependency injection.
-- Parallel processing support based on [star-topology and pipeline pattern](base/src/parallel/pipeline.c). [This is elaborated in great details by the networking scenarios here.](base/parallel.md).
+- Parallel processing support based on [star-topology and pipeline pattern](base/src/parallel/pipeline.cc). [This is elaborated in great details by the networking scenarios here.](base/parallel.md).
 - It has scalability features. The requests are [load-balanced](apps/load_balancer) in the worker processes.
 - It has [memory profiler](apps/chat/src/profiler.c).
-- It has [event-loop](base/src/event_loop_poll.c) module to handle user data in [fibers](base/src/fiber.c).
-- It has [command shell](base/src/shake.c) to diagnose the server.
+- It has [event-loop](base/src/event_loop_poll.cc) module to handle user data in [fibers](base/src/worker.cc).
+- It has [command shell](base/src/shake_intrprtr.cc) to diagnose the server.
 - Writing new feature for chat server needs very less code(see the following ..). 
 - It has an [HTTP interface](apps/http)(It is useful for benchmarking).
 - It has [streamio](net/src/streamio.c) which supports io chaining. It is useful to implement proxy-pattern and chain-of-responsiblity pattern. The instant-messaging(chat) server is tunneled through http protocol using this feature.

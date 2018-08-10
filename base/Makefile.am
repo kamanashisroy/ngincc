@@ -1,47 +1,52 @@
 
 SUBDIRS= tests
 
-TARGET_BIN=nginz_base_main
-TARGET_LAR=libnginz_base.la
+TARGET_BIN=ngincc_base_main
+TARGET_LAR=libngincc_base.la
 bin_PROGRAMS=$(TARGET_BIN)
 lib_LTLIBRARIES=$(TARGET_LAR)
 
-NGINZ_SOURCE_FILES = \
-src/fiber.c     src/plugin.c	src/plugin_manager.c	src/scanner.c \
-src/binary_coder_extended.c \
-src/backtrace.c \
-src/lazy_call.c \
-src/shake.c	src/shake/help.c	src/shake/test.c	src/shake/quitall.c	src/shake/enumerate.c \
-src/parallel/pipeline.c	src/parallel/fork.c	src/parallel/ping.c \
-src/parallel/async_request.c \
-src/base_subsystem.c
+NGINCC_SOURCE_FILES = \
+src/worker.cc    src/plugin_manager.cc \
+src/lazy_worker.cc \
+src/binary_coder.cc \
+src/shake/shake_intrprtr.cc \
+src/shake/help.cc \
+src/shake/test.cc \
+src/shake/quitall.cc \
+src/shake/enumerate.cc \
+src/parallel/pipeline.cc \
+src/parallel/fork.cc \
+src/parallel/ping.cc \
+src/parallel/async_request.cc \
+src/base_subsystem.cc
 
-EVENT_LOOP_POLL = src/event_loop_poll.c
-EVENT_LOOP_PARTITIONED_OPENMP_POLL = src/event_loop_partitioned_openmp_poll.c
+EVENT_LOOP_POLL = src/event_loop_poll.cc
+EVENT_LOOP_PARTITIONED_OPENMP_POLL = src/event_loop_partitioned_openmp_poll.cc
 
-pkgincludedir=$(includedir)/nginz_base@PACKAGE_SUFFIX@
+pkgincludedir=$(includedir)/ngincc_base@PACKAGE_SUFFIX@
 nobase_pkginclude_HEADERS= \
-inc/event_loop.h \
-inc/fiber.h       inc/plugin.h	inc/plugin_manager.h	inc/scanner.h
+inc/event_loop.hxx \
+inc/worker.hxx      inc/plugin_manager.hxx      inc/lazy_worker.hxx
 
 GIT_COMMIT_VERSION=`git describe --dirty --always --tags`
 
-NGINZ_INCLUDES=-Iinc
-NGINZ_CFLAGS=$(AROOP_CFLAGS) $(MEMCACHED_CFLAGS) -DGIT_COMMIT_VERSION=\"$(GIT_COMMIT_VERSION)\" -Wall
+NGINCC_INCLUDES=-Iinc
+NGINCC_CXXFLAGS=-std=c++17 -DGIT_COMMIT_VERSION=\"$(GIT_COMMIT_VERSION)\" -Wall
+NGINCC_CXXFLAGS+=-ggdb3
 
-libnginz_base_la_SOURCES = $(NGINZ_SOURCE_FILES) $(EVENT_LOOP_POLL)
-libnginz_base_la_CPPFLAGS = $(NGINZ_CFLAGS) $(NGINZ_INCLUDES)
-#libnginz_base_la_LIBADD = @AROOP_DEBUG_LIBS@ 
+libngincc_base_la_SOURCES = $(NGINCC_SOURCE_FILES) $(EVENT_LOOP_POLL)
+libngincc_base_la_CXXFLAGS = $(NGINCC_CXXFLAGS) $(NGINCC_INCLUDES)
 
 # binary executables
-nginz_base_main_SOURCES= $(NGINZ_SOURCE_FILES) src/main.c $(EVENT_LOOP_POLL)
-nginz_base_main_CPPFLAGS= $(NGINZ_CFLAGS) -ggdb3 -DAROOP_BASIC -DAROOP_OPP_PROFILE $(NGINZ_INCLUDES)
-nginz_base_main_LDFLAGS= -static @AROOP_DEBUG_LIBS@ $(MEMCACHED_LIBS)
+ngincc_base_main_SOURCES= $(NGINCC_SOURCE_FILES) src/main.cc $(EVENT_LOOP_POLL)
+ngincc_base_main_CXXFLAGS= $(NGINCC_CXXFLAGS) $(NGINCC_INCLUDES)
+ngincc_base_main_LDFLAGS=
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libnginz_base@PACKAGE_SUFFIX@.pc
+pkgconfig_DATA = libngincc_base@PACKAGE_SUFFIX@.pc
 
-libnginz_base@PACKAGE_SUFFIX@.pc: libnginz_base.pc
+libngincc_base@PACKAGE_SUFFIX@.pc: libngincc_base.pc
 	cp $< $@
 
-#MAINTAINERCLEANFILES = nginz.pc
+#MAINTAINERCLEANFILES = ngincc.pc

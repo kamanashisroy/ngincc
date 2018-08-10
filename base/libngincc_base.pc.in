@@ -1,0 +1,18 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+bindir=@bindir@
+includedir=@includedir@/ngincc@PACKAGE_SUFFIX@
+datarootdir=@datarootdir@
+datadir=@datadir@
+variant=static
+ngincc_main=${bindir}/ngincc_main@PACKAGE_SUFFIX@
+
+@vapigen_decl@
+
+Name: NginZ library
+Description: This is NginZ library for scalable software
+Version: @VERSION@
+Libs: -L${libdir} -lngincc
+Libs.private: ${libdir}/libngincc_${variant}.a
+Cflags: -I${includedir}
