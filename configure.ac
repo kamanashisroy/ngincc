@@ -53,6 +53,8 @@ AC_PROG_RANLIB
 AC_CONFIG_FILES([
 	base/Makefile
 	base/libngincc_base.pc
+	net/Makefile
+	net/libngincc_net.pc
 	Makefile
 ])
 

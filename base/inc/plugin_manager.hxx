@@ -45,7 +45,7 @@ namespace ngincc {
                         std::apply(std::any_cast<std::function<int(Targs...)>>(std::get<2>(it->second)), args);
                     }
                 }
-                // TODO return a vector
+                // TODO return a vector of all return values
                 return 0;
             }
             //! \@}

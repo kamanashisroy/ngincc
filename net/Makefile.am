@@ -1,32 +1,32 @@
 
-TARGET_BIN=nginz_net_main
-TARGET_LAR=libnginz_net.la
+TARGET_BIN=ngincc_net_main
+TARGET_LAR=libngincc_net.la
 bin_PROGRAMS=$(TARGET_BIN)
 lib_LTLIBRARIES=$(TARGET_LAR)
 
-NGINZ_NET_SOURCE_FILES = \
-src/net_subsystem.c \
-src/raw_pipeline.c \
-src/streamio.c \
-src/tcp_listener.c	src/protostack.c
+NGINCC_NET_SOURCE_FILES = \
+src/raw_pipeline.cc \
+src/tcp_listener_server.cc \
+src/net_subsystem.cc
 
-NGINZ_BASE_LDFLAGS=$(top_builddir)/base/libnginz_base.la
-NGINZ_NET_INCLUDES=-Iinc -I$(top_builddir)/base/inc
+NGINCC_BASE_LDFLAGS=$(top_builddir)/base/libngincc_base.la
+NGINCC_NET_INCLUDES=-Iinc -I$(top_builddir)/base/inc
 
-NGINZ_CFLAGS=$(AROOP_CFLAGS) $(MEMCACHED_CFLAGS) -DGIT_COMMIT_VERSION=\"$(GIT_COMMIT_VERSION)\" -Wall
-libnginz_net_la_SOURCES = $(NGINZ_NET_SOURCE_FILES)
-libnginz_net_la_CPPFLAGS = $(NGINZ_CFLAGS) $(NGINZ_NET_INCLUDES) 
-libnginz_net_la_LDFLAGS = $(NGINZ_BASE_LDFLAGS)
+NGINCC_CXXFLAGS=-std=c++17 -DGIT_COMMIT_VERSION=\"$(GIT_COMMIT_VERSION)\" -Wall
+NGINCC_CXXFLAGS+=-ggdb3
 
-nginz_net_main_SOURCES = $(NGINZ_NET_SOURCE_FILES) src/main.c
-nginz_net_main_CPPFLAGS = $(NGINZ_CFLAGS) -ggdb3 -DAROOP_BASIC -DAROOP_OPP_PROFILE $(NGINZ_NET_INCLUDES) 
-nginz_net_main_LDFLAGS= -static $(MEMCACHED_LIBS) $(NGINZ_BASE_LDFLAGS) @AROOP_DEBUG_LIBS@ 
-#nginz_net_main_LDFLAGS= -static $(NGINZ_BASE_LDFLAGS)
+libngincc_net_la_SOURCES = $(NGINCC_NET_SOURCE_FILES)
+libngincc_net_la_CXXFLAGS = $(NGINCC_CXXFLAGS) $(NGINCC_NET_INCLUDES) 
+libngincc_net_la_LDFLAGS = $(NGINCC_BASE_LDFLAGS)
+
+ngincc_net_main_SOURCES = $(NGINCC_NET_SOURCE_FILES) src/main.cc
+ngincc_net_main_CXXFLAGS = $(NGINCC_CXXFLAGS) -ggdb3 -DAROOP_BASIC -DAROOP_OPP_PROFILE $(NGINCC_NET_INCLUDES) 
+ngincc_net_main_LDFLAGS= -static $(NGINCC_BASE_LDFLAGS)
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libnginz_net@PACKAGE_SUFFIX@.pc
+pkgconfig_DATA = libngincc_net@PACKAGE_SUFFIX@.pc
 
-libnginz_net@PACKAGE_SUFFIX@.pc: libnginz_net.pc
+libngincc_net@PACKAGE_SUFFIX@.pc: libngincc_net.pc
 	cp $< $@
 
-#MAINTAINERCLEANFILES = nginz.pc
+#MAINTAINERCLEANFILES = ngincc.pc

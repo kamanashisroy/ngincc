@@ -12,7 +12,7 @@
 
 namespace ngincc {
     namespace core {
-        struct base_subsystem {
+        class base_subsystem {
         public:
             //! \@{ getters
             worker& get_worker();
@@ -20,11 +20,11 @@ namespace ngincc {
             plugin_manager& get_plugin_manager();
             //! \@}
 
-            int parallel_init();
+            virtual int parallel_init();
             base_subsystem();
-            ~base_subsystem();
+            virtual ~base_subsystem();
             int run();
-        private:
+        protected:
             plugin_manager base_plug;
             worker base_worker;
             lazy_worker base_lazy;
