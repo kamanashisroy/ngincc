@@ -29,7 +29,7 @@ using ngincc::core::binary_coder;
 using namespace std::placeholders;
 using namespace ngincc::net;
 
-int raw_pipeline::sendmsg_helper(int through, int target, string&cmd) {
+int raw_pipeline::sendmsg_helper(int through, int target, unsigned int port, const string&rpc_space) {
 	union {
 		int target;
 		char buf[CMSG_SPACE(sizeof(int))];
@@ -45,8 +45,12 @@ int raw_pipeline::sendmsg_helper(int through, int target, string&cmd) {
 	memset(&msg, 0, sizeof(msg));
 	memset(iov, 0, sizeof(iov));
 
-	iov[0].iov_base = (void*)cmd.c_str();
-	iov[0].iov_len  = cmd.size();
+    msg_buffer.reset();
+    binary_coder coder(msg_buffer);
+    coder <<= (uint32_t)port;
+    coder <<= rpc_space;
+	iov[0].iov_base = (void*)msg_buffer.data();
+	iov[0].iov_len  = msg_buffer.out_avail();
 	msg.msg_iov = iov;
 	msg.msg_iovlen = 1;
 	msg.msg_control = intbuf.buf;
@@ -66,14 +70,14 @@ int raw_pipeline::sendmsg_helper(int through, int target, string&cmd) {
 	return 0;
 }
 
-int raw_pipeline::send_socket(int destpid, int socket, string& cmd) {
+int raw_pipeline::send_socket(int destpid, int socket, unsigned int port, const string& rpc_space) {
 	int fd = pipe.pp_get_raw_fd(destpid);
 	if(fd == -1) {
 		syslog(LOG_ERR, "We could not find raw fd for:%d\n", destpid);
 		return -1;
 	}
 
-	return sendmsg_helper(fd, socket, cmd);
+	return sendmsg_helper(fd, socket, port, rpc_space);
 }
 
 /****************************************************/
@@ -96,9 +100,10 @@ int raw_pipeline::recvmsg_helper(int through, int&target) {
 	memset(&msg, 0, sizeof(msg));
 	memset(iov, 0, sizeof(iov));
 
-    recv_buffer.reset();
-	iov[0].iov_base = recv_buffer.data();
-	iov[0].iov_len  = recv_buffer.capacity();
+    //recv_string.clear(); // NOTE it may change the string size
+    msg_buffer.reset();
+	iov[0].iov_base = msg_buffer.data();
+	iov[0].iov_len  = msg_buffer.capacity();
 	msg.msg_iov = iov;
 	msg.msg_iovlen = 1;
 	msg.msg_control = intbuf.buf;
@@ -110,7 +115,7 @@ int raw_pipeline::recvmsg_helper(int through, int&target) {
 		return -1;
 	}
 	if(msg.msg_iovlen == 1 && iov[0].iov_len > 0) {
-		recv_buffer.set_rd_length(iov[0].iov_len);
+		msg_buffer.set_rd_length(iov[0].iov_len);
 	}
 	for(control_message = CMSG_FIRSTHDR(&msg);
 		control_message != NULL;
@@ -127,19 +132,21 @@ int raw_pipeline::recvmsg_helper(int through, int&target) {
 
 int raw_pipeline::on_raw_recv_socket(int fd, int events) {
 	uint32_t port = 0;
-	uint32_t srcpid = 0;
+	[[maybe_unused]]uint32_t srcpid = 0;
 	int acceptfd = -1;
+    string rpc_space;
     syslog(LOG_NOTICE, "[pid:%d]\treceiving from parent", getpid());
     if(recvmsg_helper(fd, acceptfd)) {
         return 0;
     }
-    binary_coder coder(recv_buffer);
-    coder >>= srcpid;
+    binary_coder coder(msg_buffer);
+    coder >>= srcpid; // unused
     coder >>= port;
+    coder >>= rpc_space;
     for(auto&& stack : tcp_server_list) {
         // this is costly O(n) code
-        if(port == (uint32_t)stack.get_port()) {
-            stack.on_connection_bubble(acceptfd);
+        if(port == (uint32_t)stack->get_port()) {
+            stack->on_connection_bubble(acceptfd,rpc_space);
             break;
         }
     }
@@ -156,9 +163,9 @@ raw_pipeline::raw_pipeline(
         plugin_manager& net_plugs
         , event_loop& eloop
         , pipeline& pipe
-        , vector<server_stack>& tcp_server_list
+        , vector<std::unique_ptr<server_stack>>& tcp_server_list
     ) :
-    recv_buffer()
+    msg_buffer()
     , eloop(eloop)
     , pipe(pipe)
     , tcp_server_list(tcp_server_list) {

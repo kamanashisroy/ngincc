@@ -298,7 +298,7 @@ int pipeline::pp_fork_parent_after_callback(int child_pid) {
 		/********* Register readers *************************/
 		/****************************************************/
 	    eloop.register_fd(mynode->fd[1], std::bind(&pipeline::on_bubbles,this,_1,_2), NGINZ_POLL_ALL_FLAGS);
-	    core_plug.plug_call<int&>("parallel/pipeline/raw/setup", {std::ref(mynode->raw_fd[1])});
+	    core_plug.plug_call<int>("parallel/pipeline/raw/setup", {std::ref(mynode->raw_fd[1])});
 	}
 	return 0;
 }

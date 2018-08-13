@@ -13,7 +13,7 @@ namespace ngincc {
             //! \brief when a tcp-client is accepted
             virtual int on_tcp_connection(int client_fd);
             //! \brief when a tcp-client is transferred to the (current)worker process
-            virtual int on_connection_bubble(int fd);
+            virtual int on_connection_bubble(int fd, const std::string &target);
             //! \brief get the port number to bind
             virtual int get_port() const;
             //! \brief set the server fd, it is good place to set io-flags

@@ -37,13 +37,14 @@ using namespace std::placeholders;
 
 shake_intrprtr::shake_intrprtr(plugin_manager&shakeplugs,worker&core_worker,event_loop&eloop,pipeline&pipe)
     : internal_unix_socket(-1)
+    , recv_string(128,'\0')
+    , is_master(false)
     , shakeplugs(shakeplugs)
     , eloop(eloop)
     , quitall_module(shakeplugs,core_worker,pipe)
     , help_module(shakeplugs)
     , test_module(shakeplugs)
-    , enumerate_module(shakeplugs)
-    , is_master(false) {
+    , enumerate_module(shakeplugs) {
 
     std::function<int(vector<string>&,ostringstream&) > callback = std::bind(&shake_intrprtr::setup_socket,this,_1,_2);
     shakeplugs.plug_add("master/init", "Setup unix shake-socket", move(callback));
@@ -64,13 +65,13 @@ shake_intrprtr::~shake_intrprtr() {
 
 int shake_intrprtr::process_client(int fd) {
 	// read data from stdin
-	char cmd[128]; 
-	int cmdlen = read(fd, cmd, sizeof(cmd)); // XXX it will block the total process ..
+    //recv_string.clear(); // NOTE it may change the string size
+	int cmdlen = read(fd, &recv_string[0], recv_string.capacity()); // XXX it will block the total process ..
 	if(cmdlen <= 0)
 		return 0;
 
     // tokenize
-    istringstream reader(std::string(cmd,cmdlen));
+    istringstream reader(recv_string);
     std::vector<string> command_args;
     for(string token;std::getline(reader,token,' ');) {
         if(token.size() == 0) {

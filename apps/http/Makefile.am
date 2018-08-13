@@ -1,30 +1,32 @@
 
-TARGET_BIN=nginz_http_main
-TARGET_LAR=libnginz_http.la
+TARGET_BIN=ngincc_http_main
+TARGET_LAR=libngincc_http.la
 bin_PROGRAMS=$(TARGET_BIN)
 lib_LTLIBRARIES=$(TARGET_LAR)
 
-NGINZ_HTTP_SOURCE_FILES = \
-src/http_subsystem.c	src/http_accept.c	src/http_factory.c	src/http_parser.c	src/http_plugin_manager.c	src/http_tunnel.c
+NGINCC_HTTP_SOURCE_FILES = \
+src/http_subsystem.cc	src/http_server_stack.cc	src/http_connection.cc
 
-NGINZ_HTTP_LDFLAGS=$(top_builddir)/base/libnginz_base.la $(top_builddir)/net/libnginz_net.la $(top_builddir)/apps/load_balancer/libnginz_lb.la
-NGINZ_HTTP_INCLUDES=-Iinc -I$(top_builddir)/base/inc -I$(top_builddir)/net/inc  -I$(top_builddir)/apps/load_balancer/inc 
+NGINCC_HTTP_LDFLAGS=$(top_builddir)/base/libngincc_base.la $(top_builddir)/net/libngincc_net.la $(top_builddir)/apps/load_balancer/libngincc_lb.la
+NGINCC_HTTP_INCLUDES=-Iinc -I$(top_builddir)/base/inc -I$(top_builddir)/net/inc  -I$(top_builddir)/apps/load_balancer/inc 
 
 
-NGINZ_CFLAGS=$(AROOP_CFLAGS) -DGIT_COMMIT_VERSION=\"$(GIT_COMMIT_VERSION)\" -Wall
-libnginz_http_la_SOURCES = $(NGINZ_HTTP_SOURCE_FILES)
-libnginz_http_la_CPPFLAGS = $(NGINZ_CFLAGS) $(NGINZ_HTTP_INCLUDES)
-libnginz_http_la_LDFLAGS = $(NGINZ_HTTP_LDFLAGS)
+NGINCC_CXXFLAGS=-std=c++17 -DGIT_COMMIT_VERSION=\"$(GIT_COMMIT_VERSION)\" -Wall
+NGINCC_CXXFLAGS+=-ggdb3
 
-nginz_http_main_SOURCES = $(NGINZ_HTTP_SOURCE_FILES) src/main.c
-#nginz_http_main_CPPFLAGS = $(NGINZ_CFLAGS) -ggdb3 -DAROOP_BASIC -DAROOP_OPP_PROFILE $(NGINZ_HTTP_INCLUDES) 
-nginz_http_main_CPPFLAGS = $(NGINZ_CFLAGS) -DAROOP_BASIC -DAROOP_OPP_PROFILE $(NGINZ_HTTP_INCLUDES) 
-nginz_http_main_LDFLAGS= -static $(NGINZ_HTTP_LDFLAGS) @AROOP_DEBUG_LIBS@ 
+libngincc_http_la_SOURCES = $(NGINCC_HTTP_SOURCE_FILES)
+libngincc_http_la_CXXFLAGS = $(NGINCC_CXXFLAGS) $(NGINCC_HTTP_INCLUDES)
+libngincc_http_la_LDFLAGS = $(NGINCC_HTTP_LDFLAGS)
+
+ngincc_http_main_SOURCES = $(NGINCC_HTTP_SOURCE_FILES) src/main.cc
+#ngincc_http_main_CXXFLAGS = $(NGINCC_CXXFLAGS) -ggdb3 -DAROOP_BASIC -DAROOP_OPP_PROFILE $(NGINCC_HTTP_INCLUDES) 
+ngincc_http_main_CXXFLAGS = $(NGINCC_CXXFLAGS) $(NGINCC_HTTP_INCLUDES) 
+ngincc_http_main_LDFLAGS= -static $(NGINCC_HTTP_LDFLAGS)
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libnginz_http@PACKAGE_SUFFIX@.pc
+pkgconfig_DATA = libngincc_http@PACKAGE_SUFFIX@.pc
 
-libnginz_http@PACKAGE_SUFFIX@.pc: libnginz_http.pc
+libngincc_http@PACKAGE_SUFFIX@.pc: libngincc_http.pc
 	cp $< $@
 
-#MAINTAINERCLEANFILES = nginz.pc
+#MAINTAINERCLEANFILES = ngincc.pc

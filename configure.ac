@@ -55,6 +55,11 @@ AC_CONFIG_FILES([
 	base/libngincc_base.pc
 	net/Makefile
 	net/libngincc_net.pc
+	apps/Makefile
+	apps/load_balancer/Makefile
+	apps/load_balancer/libngincc_lb.pc
+	apps/http/Makefile
+	apps/http/libngincc_http.pc
 	Makefile
 ])
 

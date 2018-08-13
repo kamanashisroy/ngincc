@@ -1,4 +1,4 @@
 
 #SUBDIRS = base net db apps
-SUBDIRS = base net
+SUBDIRS = base net apps
 

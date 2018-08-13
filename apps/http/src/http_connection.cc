@@ -1,22 +1,35 @@
 
-#include <aroop/aroop_core.h>
-#include <aroop/core/xtring.h>
-#include "aroop/opp/opp_factory.h"
-#include "aroop/opp/opp_iterator.h"
-#include "aroop/opp/opp_factory_profiler.h"
-#include "aroop/opp/opp_str2.h"
-#include "nginz_config.h"
-#include "event_loop.h"
-#include "plugin.h"
-#include "log.h"
-#include "plugin_manager.h"
-#include "protostack.h"
-#include "streamio.h"
-#include "http.h"
-#include "http/http_parser.h"
-#include "http/http_plugin_manager.h"
+#include <any>
+#include <functional>
+#include <sstream>
+#include <vector>
+#include <stdexcept>
+#include <unistd.h>
 
-C_CAPSULE_START
+#include "ngincc_config.h"
+#include "log.hxx"
+#include "event_loop.hxx"
+#include "plugin_manager.hxx"
+#include "binary_coder.hxx"
+#include "parallel/pipeline.hxx"
+#include "raw_pipeline.hxx"
+#include "load_balancer.hxx"
+#include "http/http_server_stack.hxx"
+#include "http/http_connection.hxx"
+
+using std::string;
+using std::ostringstream;
+using std::endl;
+using std::vector;
+using ngincc::core::plugin_manager;
+using ngincc::core::event_loop;
+using ngincc::core::parallel::pipeline;
+using ngincc::net::raw_pipeline;
+using ngincc::net::server_stack;
+using ngincc::core::buffer_coder;
+using ngincc::core::binary_coder;
+using namespace ngincc::apps::http;
+
 
 static struct http_hooks*hooks = NULL;
 static int http_response_test_and_close(struct http_connection*http) {
@@ -53,7 +66,7 @@ static int http_url_go(struct http_connection*http, aroop_txt_t*target) {
 	return ret;
 }
 
-static int http_url_parse(struct http_connection*http, aroop_txt_t*user_data, aroop_txt_t*target_url) {
+int default_http_connection::http_url_parse(string& target_url) {
 	aroop_txt_zero_terminate(user_data);
 	aroop_assert(aroop_txt_is_zero_terminated(user_data));
 	char*content = aroop_txt_to_string(user_data);
@@ -112,25 +125,20 @@ static int http_url_parse(struct http_connection*http, aroop_txt_t*user_data, ar
 	return ret;
 }
 
-static aroop_txt_t recv_buffer = {};
-static int http_on_client_data(int fd, int status, const void*cb_data) {
-	struct http_connection*http = (struct http_connection*)cb_data;
-	aroop_assert(http->strm.fd == fd);
-	aroop_txt_set_length(&recv_buffer, 1); // without it aroop_txt_to_string() will give NULL
-	int count = recv(http->strm.fd, aroop_txt_to_string(&recv_buffer), aroop_txt_capacity(&recv_buffer), 0);
+int default_http_connection::on_client_data(int fd, int status) {
+	// aroop_assert(strm.fd == fd);
+	int count = recv(fd, recv_buffer.data(), recv_buffer.capacity(), 0);
 	if(count == 0) {
 		syslog(LOG_INFO, "Client disconnected\n");
 		http->strm.close(&http->strm);
-		OPPUNREF(http);
 		return -1;
 	}
 	if(count >= NGINZ_MAX_HTTP_MSG_SIZE) {
 		syslog(LOG_INFO, "Disconnecting HTTP client for too big data input\n");
 		http->strm.close(&http->strm);
-		OPPUNREF(http);
 		return -1;
 	}
-	aroop_txt_set_length(&recv_buffer, count);
+    recv_buffer.set_rd_length(count);
 	//return x.processPacket(pkt);
 	aroop_txt_t url = {};
 	int response = http_url_parse(http, &recv_buffer, &url);
@@ -148,31 +156,39 @@ static int http_on_client_data(int fd, int status, const void*cb_data) {
 	return response;
 }
 
-static int http_parser_hookup(int signature, void*given) {
-	hooks = (struct http_hooks*)given;
-	hooks->on_client_data = http_on_client_data;
-	aroop_assert(hooks != NULL);
+default_http_connection::close() {
+    if(-1 != fd) {
+        eloop.unregister_fd(fd);
+        fd = -1;
+    }
+}
+
+default_http_connection::default_http_connection(int fd,event_loop& eloop) : fd(fd) {
+    if(-1 == fd || 0 == fd) {
+        throw std::range_error("Invalid fild descriptor");
+    }
+    std::function<int(int,int)> data_callback = std::bind(&default_http_connection::on_client_data, this, _1, _2);
+    eloop.register_fd(fd, data_callback, NGINZ_POLL_ALL_FLAGS);
+#ifdef NGINZ_EVENT_DEBUG
+	eloop.register_debug(fd, on_http_debug);
+#endif
+}
+
+default_http_connection::~default_http_connection() {
+    close();
+}
+
+#if 0
+static int default_http_close(struct streamio*strm) {
+	if(strm->bubble_up) {
+		return strm->bubble_up->close(strm->bubble_up);
+	}
+	if(strm->fd != INVALID_FD) {
+		struct http_connection*http = (struct http_connection*)strm;
+		event_loop_unregister_fd(strm->fd);
+		if(!(http->state & HTTP_SOFT_QUIT))close(strm->fd);
+		strm->fd = -1;
+	}
 	return 0;
 }
-
-static int http_parser_hookup_desc(aroop_txt_t*plugin_space, aroop_txt_t*output) {
-	return plugin_desc(output, "http_parser", "http hooking", plugin_space, __FILE__, "It copies the hooks for future use.\n");
-}
-
-int http_parser_module_init() {
-	// setup the hooks
-	aroop_txt_embeded_buffer(&recv_buffer, NGINZ_MAX_HTTP_MSG_SIZE);
-	aroop_txt_t plugin_space = {};
-	aroop_txt_embeded_set_static_string(&plugin_space, "httpproto/hookup");
-	pm_plug_bridge(&plugin_space, http_parser_hookup, http_parser_hookup_desc);
-	return 0;
-}
-
-int http_parser_module_deinit() {
-	pm_unplug_bridge(0, http_parser_hookup);
-	aroop_txt_destroy(&recv_buffer);
-	return 0;
-}
-
-
-C_CAPSULE_END
+#endif

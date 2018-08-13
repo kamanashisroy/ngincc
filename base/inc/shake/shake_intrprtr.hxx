@@ -25,6 +25,8 @@ namespace ngincc {
                 ~shake_intrprtr();
             private:
                 int internal_unix_socket; //!< unix socket
+                std::string recv_string;
+                bool is_master;
                 ngincc::core::plugin_manager &shakeplugs;
                 ngincc::core::event_loop &eloop;
 
@@ -33,7 +35,6 @@ namespace ngincc {
                 ngincc::core::shake::help help_module;         //!< quit-all module
                 ngincc::core::shake::test test_module;         //!< test-module
                 ngincc::core::shake::enumerate enumerate_module; //!< test-module
-                bool is_master;
 
                 int process_client(int client_fd);
                 int setup_socket(std::vector<std::string>&, std::ostringstream&);

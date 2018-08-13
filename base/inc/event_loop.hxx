@@ -1,6 +1,9 @@
 #ifndef EVENT_LOOP_HXX
 #define EVENT_LOOP_HXX
 
+#include <functional>
+
+#include "module.hxx"
 #include "ngincc_config.h"
 
 namespace ngincc {
