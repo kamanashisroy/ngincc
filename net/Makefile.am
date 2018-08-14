@@ -5,6 +5,7 @@ bin_PROGRAMS=$(TARGET_BIN)
 lib_LTLIBRARIES=$(TARGET_LAR)
 
 NGINCC_NET_SOURCE_FILES = \
+src/server_stack.cc \
 src/raw_pipeline.cc \
 src/tcp_listener_server.cc \
 src/net_subsystem.cc

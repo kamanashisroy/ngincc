@@ -44,6 +44,21 @@ static int on_http_debug(int fd, const void*cb_data) {
 }
 #endif
 
+int http_server_stack::on_server_error() {
+    // WHAT TO DO ??
+    return 0;
+}
+
+int http_server_stack::on_server_close() {
+    // WHAT TO DO ??
+    return 0;
+}
+
+int http_server_stack::set_server_fd(int server_fd) {
+    // WHAT TO DO ??
+    return 0;
+}
+
 int http_server_stack::on_connection_bubble(int fd, const string& command) {
 	if(is_quiting)
 		return 0;

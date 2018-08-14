@@ -6,6 +6,7 @@
 
 namespace ngincc {
     namespace core {
+        // TODO rename buffer_coder to buffer_stream
         class buffer_coder : public std::basic_streambuf<uint8_t> {
         public:
             buffer_coder();
@@ -22,6 +23,7 @@ namespace ngincc {
             //uint8_t internal_buffer[NGINZ_MAX_BINARY_MSG_LEN];
             std::array<uint8_t,NGINZ_MAX_BINARY_MSG_LEN> internal_buffer;
         };
+        // TODO rename binary_coder to binary_iostream 
         class binary_coder : public std::basic_iostream<uint8_t> {
         public:
             binary_coder(buffer_coder &buffer);

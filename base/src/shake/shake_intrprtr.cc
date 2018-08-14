@@ -70,37 +70,45 @@ int shake_intrprtr::process_client(int fd) {
 	if(cmdlen <= 0)
 		return 0;
 
+    // XXX it does not work with fragmented input
     // tokenize
     istringstream reader(recv_string);
-    std::vector<string> command_args;
-    for(string token;std::getline(reader,token,' ');) {
-        if(token.size() == 0) {
+    for(string command;std::getline(reader,command);) {
+        if(command.size() == 0) {
             continue;
         }
-        command_args.push_back(token);
-    }
+        istringstream command_reader(command);
 
-    // read the last token
-    string last_token;
-    reader >> last_token;
-    if(last_token.size()) {
-        command_args.push_back(last_token);
-    }
+        std::vector<string> command_args;
+        for(string token;std::getline(command_reader,token,command_reader.widen(' '));) {
+            if(token.size() == 0) {
+                continue;
+            }
+            command_args.push_back(token);
+        }
 
-    // sanity check
-    if(0 == command_args.size()) {
-        return 0;// skip it
-    }
+        // read the last token
+        string last_token;
+        reader >> last_token;
+        if(last_token.size()) {
+            command_args.push_back(last_token);
+        }
 
-    // call plugin
-    string plugin_space = string("shake/") + command_args[0];
-    ostringstream writer;
-    //std::tuple<std::vector<string>,stringstream > args({command_args,writer});
-    std::tuple<std::vector<string>&,ostringstream& > args = std::make_tuple(std::ref(command_args),std::ref(writer));
-    // shakeplugs.plug_call(plugin_space, std::make_tuple(command_args, writer));
-    shakeplugs.plug_call<std::vector<string>&,ostringstream& >(std::move(plugin_space), std::move(args));
-    string outstr = writer.str();
-    [[maybe_unused]] int result = write(fd, outstr.c_str(), outstr.size());
+        // sanity check
+        if(0 == command_args.size()) {
+            return 0;// skip it
+        }
+
+        // call plugin
+        string plugin_space = string("shake/") + command_args[0];
+        ostringstream writer;
+        //std::tuple<std::vector<string>,stringstream > args({command_args,writer});
+        std::tuple<std::vector<string>&,ostringstream& > args = std::make_tuple(std::ref(command_args),std::ref(writer));
+        // shakeplugs.plug_call(plugin_space, std::make_tuple(command_args, writer));
+        shakeplugs.plug_call<std::vector<string>&,ostringstream& >(std::move(plugin_space), std::move(args));
+        string outstr = writer.str();
+        [[maybe_unused]] int result = write(fd, outstr.c_str(), outstr.size());
+    }
 	return 0;
 }
 

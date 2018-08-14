@@ -10,6 +10,9 @@ using ngincc::apps::load_balancer;
 using ngincc::apps::round_robin_load_balancer;
 using ngincc::core::parallel::pipeline;
 
+load_balancer::~load_balancer() {
+}
+
 /*int round_robin_load_balancer::setup() {
 	nid = getpid();
 	return 0;

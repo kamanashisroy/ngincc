@@ -12,7 +12,7 @@
 //#include "db.hxx"
 
 
-using ngincc::net::http::http_subsystem;
+using ngincc::apps::http::http_subsystem;
 
 static int run_http() {
     http_subsystem http;
