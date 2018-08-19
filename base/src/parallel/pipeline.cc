@@ -230,7 +230,7 @@ int pipeline::on_bubbles(int fd, int events) {
     coder >>= srcpid;
     coder >>= service;
 	if(service.size()) {
-		if(core_plug.plug_call<ngincc::core::buffer_coder&>(move(service), {recv_buffer})) {
+		if(core_plug.plug_call<ngincc::core::buffer_coder&>(service, {recv_buffer})) {
 			syslog(LOG_NOTICE, "[pid:%d]\tplugin returns error\n", getpid());
 		}
 	}

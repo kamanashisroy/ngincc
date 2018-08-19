@@ -16,9 +16,6 @@
 
 
 int default_net_channel::send(string& content, int flag) {
-	if(!!bubble_up) {
-		return bubble_up.send(content, flag); // delegate
-    }
 	if(INVALID_FD == fd) {
 		syslog(LOG_ERR, "There is a dead chat\n");
 		return -1;
@@ -27,8 +24,6 @@ int default_net_channel::send(string& content, int flag) {
 }
 
 int default_net_channel::send_nonblock(string& content, int flag) {
-	if(!!bubble_up)
-		return bubble_up.send(content, flag);
 	if(INVALID_FD == fd) {
 		syslog(LOG_ERR, "There is a dead chat\n");
 		return -1;
@@ -49,11 +44,7 @@ int default_net_channel::send_nonblock(string& content, int flag) {
 	return err;
 }
 
-int default_net_channel::close_handle() {
-	if(!!bubble_up) {
-		return bubble_up.close_handle();
-	}
-	strm->bubble_up = nullptr;
+int default_net_channel::close_handle(bool soft) {
 	if(INVALID_FD != fd) {
 		eloop.unregister_fd(fd);
 		close(fd);
@@ -79,36 +70,13 @@ int default_net_channel::transfer_parallel(struct streamio*strm, int destpid, in
 }
 
 default_net_channel::default_net_channel(
-    std::shared_ptr<net_channel>& up
-    , std::shared_ptr<net_channel>& down)
-    : fd(INVALID_FD)
+    int fd
+    : fd(fd)
     , error(0){
 }
 
 default_net_channel::~default_net_channel() {
     close_handle();
 }
-
-int default_net_channel::chain(struct streamio*up, struct streamio*down) {
-	if(down->bubble_up) {
-		down->close(down);
-	}
-	down->bubble_up = up;
-	if(up->bubble_down) {
-		up->bubble_down->close(up->bubble_down);
-		OPPUNREF(up->bubble_down);
-	}
-	up->bubble_down = OPPREF(down);
-	return 0;
-}
-
-int default_net_channel::unchain(struct streamio*up, struct streamio*down) {
-	down->bubble_up = NULL;
-	if(up->bubble_down == down) {
-		OPPUNREF(up->bubble_down);
-	}
-	return 0;
-}
-
 
 

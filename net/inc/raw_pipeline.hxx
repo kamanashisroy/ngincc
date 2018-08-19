@@ -1,8 +1,6 @@
 #ifndef NGINZ_RAW_PIPELINE_HXX
 #define NGINZ_RAW_PIPELINE_HXX
 
-#include <memory>
-
 #include "module.hxx"
 #include "plugin_manager.hxx"
 #include "event_loop.hxx"
@@ -18,7 +16,7 @@ namespace ngincc {
                 ngincc::core::plugin_manager& net_plugs
                 , ngincc::core::event_loop& eloop
                 , ngincc::core::parallel::pipeline& pipe
-                , std::vector<std::unique_ptr<ngincc::net::server_stack> >& tcp_server_list
+                , std::vector<std::reference_wrapper<ngincc::net::server_stack> >& tcp_server_list
             );
             ~raw_pipeline();
             //! \brief send the socket-fd to destination process.
@@ -32,7 +30,7 @@ namespace ngincc {
             ngincc::core::buffer_coder msg_buffer;
             ngincc::core::event_loop& eloop;
             ngincc::core::parallel::pipeline& pipe;
-            std::vector<std::unique_ptr<ngincc::net::server_stack> >& tcp_server_list;
+            std::vector<std::reference_wrapper<ngincc::net::server_stack>>& tcp_server_list;
 
             int on_raw_socket_setup(int raw_fd);
             int on_raw_recv_socket(int fd, int events);

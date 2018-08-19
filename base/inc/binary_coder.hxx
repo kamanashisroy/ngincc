@@ -4,6 +4,8 @@
 #include <tuple>
 #include <iterator>
 
+#include "ngincc_config.h"
+
 namespace ngincc {
     namespace core {
         // TODO rename buffer_coder to buffer_stream

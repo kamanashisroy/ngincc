@@ -20,7 +20,7 @@ namespace ngincc {
             tcp_listener_server(
                 ngincc::core::plugin_manager& net_plugs
                 , ngincc::core::event_loop& eloop
-                , std::vector< std::unique_ptr<ngincc::net::server_stack> >& tcp_server_list
+                , std::vector<std::reference_wrapper<ngincc::net::server_stack> >& tcp_server_list
             );
             ~tcp_listener_server();
         private:
@@ -28,7 +28,7 @@ namespace ngincc {
             ngincc::core::event_loop& eloop;
 
             //! contains all the protocol-stack here
-            std::vector< std::unique_ptr<ngincc::net::server_stack> >& tcp_server_list;
+            std::vector<std::reference_wrapper<ngincc::net::server_stack> >& tcp_server_list;
             //! contains low-level server-handle
             std::vector<int> tcp_server_fds;
 

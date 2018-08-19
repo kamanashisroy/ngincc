@@ -35,7 +35,7 @@ namespace ngincc {
             //    return plugs.find(plugin_space);
             //}
             template <typename ...Targs>
-            int plug_call(const std::string&& plugin_space, std::tuple<Targs...>&& args) {
+            int plug_call(const std::string& plugin_space, std::tuple<Targs...>&& args) {
                 const unsigned long long hcode = hash_func(plugin_space);
                 // auto it = plugs.find(hcode);
                 auto&& range = plugs.equal_range(hcode);

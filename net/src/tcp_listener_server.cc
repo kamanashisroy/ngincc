@@ -38,12 +38,12 @@ int tcp_listener_server::on_connect(int fd, int status, int server_index) {
 	if(client_fd < 0) {
 		syslog(LOG_ERR, "Accept failed:%s\n", strerror(errno));
 		eloop.unregister_fd(fd);
-        tcp_server_list[server_index]->on_server_error();
+        tcp_server_list[server_index].get().on_server_error();
 		close(fd);
 		close(client_fd);
 		return -1;
 	}
-    tcp_server_list[server_index]->on_tcp_connection(client_fd);
+    tcp_server_list[server_index].get().on_tcp_connection(client_fd);
 	return 0;
 }
 
@@ -59,7 +59,7 @@ int tcp_listener_server::stop(std::vector<std::string>& cmd_args, std::ostringst
 		eloop.unregister_fd(tcp_server_fds[i]);
 
         // notify stack
-        tcp_server_list[i]->on_server_close();
+        tcp_server_list[i].get().on_server_close();
 
         // close fd
 		close(tcp_server_fds[i]);
@@ -70,18 +70,18 @@ int tcp_listener_server::stop(std::vector<std::string>& cmd_args, std::ostringst
 
 int tcp_listener_server::start(std::vector<std::string>& cmd_args, std::ostringstream& output) {
     // iterate through all the available server-stack
-    net_plugs.plug_call<vector<std::unique_ptr<server_stack>>& >("net/tcp/server",{tcp_server_list});
+    // net_plugs.plug_call<vector<std::unique_ptr<server_stack>>& >("net/tcp/server",{tcp_server_list});
 
     for(std::size_t i = 0; i < tcp_server_list.size(); ++i) {
-        server_stack*stack = tcp_server_list[i].get();
-        int tcp_port = stack->get_port();
+        auto&& stack = tcp_server_list[i];
+        int tcp_port = stack.get().get_port();
         tcp_server_fds.push_back(-1);
 
         int server_fd = 0;
         // create socket
 		if((server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
 			syslog(LOG_ERR, "Failed to create socket:%s\n", strerror(errno));
-            stack->on_server_error();
+            stack.get().on_server_error();
 			continue;
 		}
 
@@ -96,19 +96,19 @@ int tcp_listener_server::start(std::vector<std::string>& cmd_args, std::ostrings
 		if(bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
 			syslog(LOG_ERR, "tcp_listener,c Failed to bind port %d:%s\n", tcp_port, strerror(errno));
 			close(server_fd);
-            stack->on_server_error();
+            stack.get().on_server_error();
 			continue;
 		}
 		if(listen(server_fd, NGINZ_TCP_LISTENER_BACKLOG) < 0) {
 			syslog(LOG_ERR, "Failed to listen:%s\n", strerror(errno));
 			close(server_fd);
-            stack->on_server_error();
+            stack.get().on_server_error();
 			continue;
 		}
 
         // notify stack
         tcp_server_fds[i] = server_fd;
-        stack->set_server_fd(server_fd);
+        stack.get().set_server_fd(server_fd);
         output << "tcp_listener.c:listening to port " << tcp_port << endl;
 		syslog(LOG_INFO, "tcp_listener.c: listening to port %d\n", tcp_port);
 
@@ -122,7 +122,7 @@ int tcp_listener_server::start(std::vector<std::string>& cmd_args, std::ostrings
 tcp_listener_server::tcp_listener_server(
         plugin_manager& net_plugs
         ,event_loop& eloop
-        ,vector<std::unique_ptr<server_stack> >& tcp_server_list
+        ,vector<std::reference_wrapper<server_stack> >& tcp_server_list
     )
     : net_plugs(net_plugs)
     , eloop(eloop)

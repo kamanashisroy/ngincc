@@ -31,7 +31,7 @@ using namespace std::placeholders;
 
 #define HTTP_WELCOME "http/welcome"
 int http_server_stack::on_tcp_connection(int fd) {
-    static string command = HTTP_WELCOME;
+    static const string command(HTTP_WELCOME);
 	raw_pipe.send_socket(lb.next(), fd, get_port(), command);
 	return 0;
 }
@@ -79,6 +79,7 @@ int http_server_stack::on_connection_bubble(int fd, const string& command) {
 
     // register it in the event loop
     clients.push_front(std::move(http));
+    // TODO execute the command
 	return 0;
 }
 
@@ -95,11 +96,7 @@ http_server_stack::http_server_stack(
     , raw_pipe(raw_pipe)
     , is_quiting(false)
     , lb(base_pipe) {
-    //std::function<int(vector<server_stack&>&)> callback = [this] (vector<std::unique_ptr<server_stack> >& output) {
-    //    output.push_back(*this);
-    //    return 0;
-    //}
-    //net_plug.plug_add("net/tcp/server", "It copies the hooks for future use.",  callback);
+    // TODO softquit all http servers net_plug.plug_add("shake/softquitall");
 }
 
 http_server_stack::~http_server_stack() {

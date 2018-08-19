@@ -12,7 +12,7 @@ namespace ngincc {
                 http_subsystem();
                 virtual ~http_subsystem();
             protected:
-                ngincc::apps::http::http_server_stack stack;
+                ngincc::apps::http::http_server_stack http_stack;
             };
         }
     }

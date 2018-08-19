@@ -119,7 +119,7 @@ int default_http_connection::http_url_parse(string& target_url) {
 }
 
 int default_http_connection::on_client_data(int fd, int status) {
-	// aroop_assert(strm.fd == fd);
+	// assert(strm.fd == fd);
 	int count = recv(fd, recv_buffer.data(), recv_buffer.capacity(), 0);
 	if(count == 0) {
 		syslog(LOG_INFO, "Client disconnected\n");
@@ -155,6 +155,7 @@ int default_http_connection::on_client_data(int fd, int status) {
 int default_http_connection::close_handle() {
     if(-1 != fd) {
         eloop.unregister_fd(fd);
+        close(fd);
         fd = -1;
     }
     return 0;

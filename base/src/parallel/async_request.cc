@@ -28,7 +28,7 @@ using ngincc::core::parallel::pipeline;
 
 
 int pipeline::async_request(
-    int dstpid, int token, string &reply_hook, string &request_hook, initializer_list<string>&& more)
+    uint32_t dstpid, uint32_t token, const string &reply_hook, const string &request_hook, const initializer_list<std::reference_wrapper<const string> >&& more)
 {
     send_buffer.reset();
     binary_coder coder(send_buffer);
@@ -51,12 +51,12 @@ int pipeline::async_request(
 }
 
 int pipeline::async_request_master(
-    int token, string &reply_hook, string &request_hook, initializer_list<string>&& more
+    uint32_t token, const string &reply_hook, const string &request_hook, const initializer_list< std::reference_wrapper< const string> >&& more
 ) {
     return async_request(masterpid, token, reply_hook, request_hook, move(more));
 }
 
-int pipeline::async_reply_worker(int destpid, int reply_token, string&& reply_hook, int success, initializer_list<string>&& more) {
+int pipeline::async_reply_worker(uint32_t destpid, uint32_t reply_token, const string& reply_hook, uint32_t success, const initializer_list< std::reference_wrapper< const string > >&& more) {
     if(reply_hook == "none") {
         return 0; // reply is not required
     }

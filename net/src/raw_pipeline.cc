@@ -145,8 +145,8 @@ int raw_pipeline::on_raw_recv_socket(int fd, int events) {
     coder >>= rpc_space;
     for(auto&& stack : tcp_server_list) {
         // this is costly O(n) code
-        if(port == (uint32_t)stack->get_port()) {
-            stack->on_connection_bubble(acceptfd,rpc_space);
+        if(port == (uint32_t)stack.get().get_port()) {
+            stack.get().on_connection_bubble(acceptfd,rpc_space);
             break;
         }
     }
@@ -163,7 +163,7 @@ raw_pipeline::raw_pipeline(
         plugin_manager& net_plugs
         , event_loop& eloop
         , pipeline& pipe
-        , vector<std::unique_ptr<server_stack>>& tcp_server_list
+        , vector<std::reference_wrapper<server_stack> >& tcp_server_list
     ) :
     msg_buffer()
     , eloop(eloop)

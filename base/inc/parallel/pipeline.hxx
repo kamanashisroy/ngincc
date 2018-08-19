@@ -38,11 +38,11 @@ namespace ngincc {
                 //! \returns -1 on failure, otherwise if returns the raw socket file descriptor.
                 int pp_get_raw_fd(int nid) const;
                 //! \brief rpc support
-                int async_reply_worker(int destpid, int reply_token, std::string&& hook_space, int success, std::initializer_list<std::string>&& more);
+                int async_reply_worker(uint32_t destpid, uint32_t reply_token, const std::string& hook_space, uint32_t success, const std::initializer_list<std::reference_wrapper<const std::string> >&& more);
                 //! \brief rpc support
-                int async_request_master(int cb_token, std::string &worker_hook, std::string &master_hook, std::initializer_list<std::string>&& more);
+                int async_request_master(uint32_t cb_token, const std::string &worker_hook, const std::string &master_hook, const std::initializer_list<std::reference_wrapper<const std::string> >&& more);
                 //! \brief rpc support
-                int async_request(int destpid, int cb_token, std::string &worker_hook, std::string &master_hook, std::initializer_list<std::string>&& more);
+                int async_request(uint32_t destpid, uint32_t cb_token, const std::string &worker_hook, const std::string &master_hook, const std::initializer_list<std::reference_wrapper<const std::string> >&& more);
             private:
                 //! \brief It contains the node structure and pid
                 struct ngincc_node {
