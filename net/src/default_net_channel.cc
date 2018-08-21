@@ -10,7 +10,7 @@
 #include "raw_pipeline.hxx"
 
 using std::string;
-using std::istream;
+using std::istringstream;
 using ngincc::core::buffer_coder;
 using ngincc::core::event_loop;
 using ngincc::net::raw_pipeline;
@@ -18,8 +18,13 @@ using ngincc::net::net_channel;
 using ngincc::net::default_net_channel;
 using namespace std::placeholders;
 
+#define NET_DEBUG(...) syslog(__VA_ARGS__)
+//#define NET_DEBUG(...)
+
+
 int default_net_channel::net_send(string&& content, int flag) {
-    return net_send(std::forward<string>(content), flag);
+    NET_DEBUG(LOG_NOTICE, "Sending(forwarding) %s", content.c_str());
+    return net_send(content, flag);
 }
 
 int default_net_channel::net_send(const string& content, int flag) {
@@ -27,11 +32,12 @@ int default_net_channel::net_send(const string& content, int flag) {
 		syslog(LOG_ERR, "There is a dead chat\n");
 		return -1;
 	}
+    NET_DEBUG(LOG_NOTICE, "Sending %s", content.c_str());
 	return send(fd, content.c_str(), content.size(), flag);
 }
 
 int default_net_channel::net_send_nonblock(string&& content, int flag) {
-    return net_send_nonblock(std::forward<string>(content), flag);
+    return net_send_nonblock(content, flag);
 }
 
 int default_net_channel::net_send_nonblock(const string& content, int flag) {
@@ -76,10 +82,10 @@ int default_net_channel::transfer_parallel(int destpid, int proto_port, string& 
 }
 
 int default_net_channel::on_client_data_helper() {
-	if(recv_buffer.in_avail() == 0) {
+	if(recv_buffer.size() == 0) { // sanity check
 		return 0;
 	}
-    istream reader(dynamic_cast<std::basic_streambuf<char>*>(&recv_buffer));
+    istringstream reader(recv_buffer);
     // NOTE we require newline at the end of data
     // TODO fix this to allow a stream or partial lines
     for (string request; std::getline(reader,request); ) {
@@ -107,13 +113,14 @@ int default_net_channel::on_client_data(int fd, int status) {
 		return 0;
     }
 	// assert(fd == chat->strm.fd);
-	int count = recv(fd, recv_buffer.data(), recv_buffer.capacity(), 0);
+	int count = recv(fd, &recv_buffer[0], recv_buffer.capacity(), 0);
 	if(count == 0) {
 		syslog(LOG_INFO, "Client disconnected");
         close_handle();
 		return -1;
 	}
 	if(count == -1) {
+        // TODO handle error cases and try recover
 		syslog(LOG_ERR, "Error reading chat data %s", strerror(errno));
         close_handle();
 		return -1;
@@ -123,7 +130,7 @@ int default_net_channel::on_client_data(int fd, int status) {
         close_handle();
 		return -1;
 	}
-    recv_buffer.set_rd_length(count);
+    recv_buffer.resize(count);
 	int ret = on_client_data_helper();
 	if(INVALID_FD == fd) {
         return -1;
@@ -135,7 +142,9 @@ default_net_channel::default_net_channel(int fd, event_loop& eloop, raw_pipeline
     : fd(fd)
     , eloop(eloop)
     , raw_pipe(raw_pipe)
+    , recv_buffer(NGINZ_MAX_HTTP_MSG_SIZE, '\0')
     , error(0){
+    NET_DEBUG(LOG_NOTICE, "new channel for %d", fd);
     std::function<int(int,int)> data_callback = std::bind(&default_net_channel::on_client_data, this, _1, _2);
     eloop.register_fd(fd, std::move(data_callback), NGINZ_POLL_ALL_FLAGS);
 }

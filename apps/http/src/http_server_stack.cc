@@ -33,9 +33,9 @@ using namespace std::placeholders;
 #define HTTP_DEBUG(...)
 
 #define HTTP_WELCOME "http/welcome"
-int http_server_stack::on_tcp_connection(int fd) {
+int http_server_stack::on_tcp_connection(int conn_fd) {
     static const string command(HTTP_WELCOME);
-	raw_pipe.send_socket(lb.next(), fd, get_port(), command);
+	raw_pipe.send_socket(lb.next(), conn_fd, get_port(), command);
 	return 0;
 }
 
@@ -62,22 +62,22 @@ int http_server_stack::set_server_fd(int server_fd) {
     return 0;
 }
 
-int http_server_stack::on_connection_bubble(int fd, const string& command) {
+int http_server_stack::on_connection_bubble(int conn_fd, const string& command) {
 	HTTP_DEBUG(LOG_NOTICE, "http_server_stack::on_connection_bubble:making new client");
 	if(is_quiting)
 		return 0;
 
     if(command.size() == 0) {
         syslog(LOG_ERR, "Possible BUG , cannot handle request %s", command.c_str());
-        close(fd);
+        close(conn_fd);
         return -1;
     }
 
     // TODO use plugin here to find the correct http-connection
-	std::unique_ptr<http_connection> http(new default_http_connection(fd,eloop));
+	std::unique_ptr<http_connection> http(new default_http_connection(conn_fd,eloop));
 	if(!http) {
 		syslog(LOG_ERR, "Could not create http object\n");
-		close(fd);
+		close(conn_fd);
 		return -1;
 	}
 

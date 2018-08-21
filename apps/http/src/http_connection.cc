@@ -68,6 +68,7 @@ int default_http_connection::http_url_go(const string& target) {
 	}
 	return ret;*/
     
+	HTTP_DEBUG(LOG_NOTICE, "default_http_connection::sending ...it works!");
     const int send_len = sizeof(IT_WORKS)-1;
     if(send(fd, IT_WORKS, send_len, 0) != send_len) {
         return -1;
@@ -77,7 +78,7 @@ int default_http_connection::http_url_go(const string& target) {
 
 int default_http_connection::http_url_parse(string& target_url) {
     // XXX it does not work with fragmented request
-    istream reader(dynamic_cast<std::basic_streambuf<char>*>(&recv_buffer));
+    istringstream reader(recv_buffer);
 	string prev_header;
 	string header;
 	int ret = -1;
@@ -86,9 +87,9 @@ int default_http_connection::http_url_parse(string& target_url) {
     for (string header; std::getline(reader,header); ) {
 	    HTTP_DEBUG(LOG_NOTICE, "default_http_connection::parsing %s", header.c_str());
 		// skip the new line(ltrim)
-        header.erase(header.begin(), std::find_if(header.begin(), header.end(), [](int ch) {
+        /*header.erase(header.begin(), std::find_if(header.begin(), header.end(), [](int ch) {
             return !std::isspace(ch);
-        }));
+        }));*/
 		if(prev_header.size() == 0) {
 			// it is the request string ..
 			if(header.size() > NGINZ_MAX_HTTP_HEADER_SIZE) { // too big header
@@ -125,7 +126,7 @@ int default_http_connection::http_url_parse(string& target_url) {
 
 int default_http_connection::on_client_data(int fd, int status) {
 	// assert(strm.fd == fd);
-	int count = recv(fd, recv_buffer.data(), recv_buffer.capacity(), 0);
+	int count = recv(fd, &recv_buffer[0], recv_buffer.capacity(), 0);
 	HTTP_DEBUG(LOG_NOTICE, "default_http_connection::on_client_data:>>Received client data");
 	if(count == 0) {
 		HTTP_DEBUG(LOG_NOTICE, "Client disconnected\n");
@@ -137,7 +138,7 @@ int default_http_connection::on_client_data(int fd, int status) {
 		close_handle();
 		return -1;
 	}
-    recv_buffer.set_rd_length(count);
+    recv_buffer.resize(count);
 	HTTP_DEBUG(LOG_NOTICE, "read %d bytes", count);
 	//return x.processPacket(pkt);
 	string url;
@@ -148,7 +149,7 @@ int default_http_connection::on_client_data(int fd, int status) {
         close_handle();
         return -1;
     }
-	if(0 == response && url.size() == 0) {
+	if(0 == response) {
 		// notify the page
 		response = http_url_go(url);
 	}
@@ -171,6 +172,7 @@ int default_http_connection::close_handle() {
 default_http_connection::default_http_connection(int fd,event_loop& eloop)
     : fd(fd)
     , state(HTTP_CONNECTED)
+    , recv_buffer(NGINZ_MAX_HTTP_MSG_SIZE, '\0')
     , eloop(eloop) {
     if(-1 == fd || 0 == fd) {
         throw std::range_error("Invalid fild descriptor");

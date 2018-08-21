@@ -26,6 +26,9 @@ using ngincc::apps::chat::connection_state;
 using ngincc::apps::chat::connection_state_connected;
 using namespace std::placeholders;
 
+#define CHAT_DEBUG(...) syslog(__VA_ARGS__)
+//#define CHAT_DEBUG(...)
+
 connection_state_connected::connection_state_connected(
         plugin_manager& core_plug
         , plugin_manager& chat_plug
@@ -49,6 +52,7 @@ int connection_state_connected::process_chat_request(
         return 0;
     }
     if(request[0] == '/') { // check if it is a command
+        CHAT_DEBUG(LOG_NOTICE, "processing command %s", request.c_str());
         istringstream command_reader(request);
         char discard_forward_slash;
         command_reader >> discard_forward_slash;
@@ -61,24 +65,28 @@ int connection_state_connected::process_chat_request(
             }
             command_args.push_back(token);
         }
+        if(command_args.size() > 0) {
 
-        if(command_args[0] == "_welcome") { // say welcome
-            chat.net_send("Welcome to NginZ chat server\nLogin name?\n", 0);
-            return 0;
-        } else { // allow other commands
-            if(command_args[0][0] == '_') {
-                // do not allow system command
+            CHAT_DEBUG(LOG_NOTICE, "processing command ... %s", command_args[0].c_str());
+            if(command_args[0] == "_welcome") { // say welcome
+                CHAT_DEBUG(LOG_NOTICE, "saying hi");
+                chat.net_send("Welcome to NginZ chat server\nLogin name?\n", 0);
                 return 0;
+            } else { // allow other commands
+                if(command_args[0][0] == '_') {
+                    // do not allow system command
+                    return 0;
+                }
+                string request("state/connected/"+command_args[0]);
+                /*std::tuple<std::reference_wrapper<vector<string>>, std::reference_wrapper<chat_connection> > args(command_args,*this);
+                return chat_plug.plug_call<vector<string>&,chat_connection&>(request, std::move(command_args), args);*/
+                /*return chat_plug.plug_call<vector<string>&,chat_connection&>(
+                    request
+                    , std::move(command_args)
+                    , std::tie(command_args,*this)
+                );*/
+                return chat_plug.plug_call(request, std::tie(command_args,*this));
             }
-            string request("state/connected/"+command_args[0]);
-            /*std::tuple<std::reference_wrapper<vector<string>>, std::reference_wrapper<chat_connection> > args(command_args,*this);
-            return chat_plug.plug_call<vector<string>&,chat_connection&>(request, std::move(command_args), args);*/
-            /*return chat_plug.plug_call<vector<string>&,chat_connection&>(
-                request
-                , std::move(command_args)
-                , std::tie(command_args,*this)
-            );*/
-            return chat_plug.plug_call(request, std::tie(command_args,*this));
         }
     } else { // try user log-in
         try_login(chat,request);

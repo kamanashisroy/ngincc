@@ -31,7 +31,7 @@ namespace ngincc {
             private:
                 int fd;
                 int state;
-                ngincc::core::buffer_coder recv_buffer;
+                std::string recv_buffer;
                 ngincc::core::event_loop& eloop;
 
                 int http_url_parse(std::string& target_url);

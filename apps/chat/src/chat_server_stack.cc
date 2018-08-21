@@ -32,10 +32,16 @@ using ngincc::core::buffer_coder;
 using namespace ngincc::apps::chat;
 using namespace std::placeholders;
 
+#define CHAT_DEBUG(...) syslog(__VA_ARGS__)
+//#define CHAT_DEBUG(...)
+
+
 #define CHAT_WELCOME "/_welcome"
-int chat_server_stack::on_tcp_connection(int fd) {
+int chat_server_stack::on_tcp_connection(int conn_fd) {
     static const string command(CHAT_WELCOME);
-	raw_pipe.send_socket(lb.next(), fd, get_port(), command);
+	raw_pipe.send_socket(lb.next(), conn_fd, get_port(), command);
+    // close the fd here
+    // close(conn_fd);
 	return 0;
 }
 
@@ -60,7 +66,7 @@ int chat_server_stack::set_server_fd(int server_fd) {
     return 0;
 }
 
-int chat_server_stack::on_connection_bubble(int fd, const string& rpc_space) {
+int chat_server_stack::on_connection_bubble(int conn_fd, const string& rpc_space) {
 	if(is_quiting)
 		return -1;
 	/*int ret = 0;
@@ -76,12 +82,13 @@ int chat_server_stack::on_connection_bubble(int fd, const string& rpc_space) {
     factory.create_chat_connection(fd);*/
 
     
-	auto& chat = factory.create_chat_connection(fd, factory.get_connected());
+	auto& chat = factory.create_chat_connection(conn_fd, factory.get_connected());
     if(!chat) {
 		syslog(LOG_ERR, "Could not create chat object\n");
-		close(fd);
+		close(conn_fd);
 		return -1;
     }
+    CHAT_DEBUG(LOG_NOTICE, "Created new chat-client for fd %d", conn_fd);
     chat->on_recv(rpc_space);
 	return 0;
 }
