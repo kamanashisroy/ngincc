@@ -54,21 +54,16 @@ int connection_state_connected::process_chat_request(
         command_reader >> discard_forward_slash;
 
         std::vector<string> command_args;
-        for(string token;std::getline(command_reader,token,command_reader.widen(' '));) {
+        char delim;
+        for(string token; command_reader >> token; command_reader >> delim) {
             if(token.size() == 0) {
                 continue;
             }
             command_args.push_back(token);
         }
 
-        // read the last token
-        string last_token;
-        command_reader >> last_token;
-        if(last_token.size()) {
-            command_args.push_back(last_token);
-        }
         if(command_args[0] == "_welcome") { // say welcome
-            chat.send("Welcome to NginZ chat server\nLogin name?\n", 0);
+            chat.net_send("Welcome to NginZ chat server\nLogin name?\n", 0);
             return 0;
         } else { // allow other commands
             if(command_args[0][0] == '_') {
@@ -104,7 +99,7 @@ int connection_state_connected::try_login(chat_connection& chat, const string& n
     } else {
         async_try_login(name, chat.get_token(), "on/asyncchat/login");
     }
-    chat.send(response, 0);
+    chat.net_send(response, 0);
 	return 0;
 }
 
@@ -153,12 +148,12 @@ int connection_state_connected::on_login_reply(buffer_coder& recv_buffer) {
                 // welcome user
                 ostringstream output;
                 output << "Welcome " << name << "!" << endl;
-                chat->send(output.str(), 0);
+                chat->net_send(output.str(), 0);
 
                 // user is logged in
                 chat->set_state(factory.get_logged_in());
             } else {
-                chat->send("Sorry, name is taken.\n", 0);
+                chat->net_send("Sorry, name is taken.\n", 0);
             }
         } else {
             async_logoff(name);

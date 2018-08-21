@@ -80,18 +80,12 @@ int shake_intrprtr::process_client(int fd) {
         istringstream command_reader(command);
 
         std::vector<string> command_args;
-        for(string token;std::getline(command_reader,token,command_reader.widen(' '));) {
+        char delim;
+        for(string token;command_reader >> token;command_reader >> delim) {
             if(token.size() == 0) {
                 continue;
             }
             command_args.push_back(token);
-        }
-
-        // read the last token
-        string last_token;
-        reader >> last_token;
-        if(last_token.size()) {
-            command_args.push_back(last_token);
         }
 
         // sanity check

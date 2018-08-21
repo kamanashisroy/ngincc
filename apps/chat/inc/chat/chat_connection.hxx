@@ -15,15 +15,21 @@ namespace ngincc {
         class plugin_manager;
         class buffer_coder;
     }
+    namespace net {
+        class raw_pipeline;
+    }
     namespace apps {
         namespace chat {
             class connection_state;
+            class chat_factory;
             //! \brief Holds the information about a client-connection
             class chat_connection : public ngincc::net::default_net_channel {
             public:
                 chat_connection(
                     int fd                                      //!< connection handle
+                    , long long token                           //!< works as unique-id
                     , ngincc::core::event_loop& eloop           //!< event-loop task
+                    , ngincc::net::raw_pipeline& raw_pipe       //!< pipeline for socket
                     , connection_state*state
                 );
                 chat_connection() = delete;
@@ -34,13 +40,15 @@ namespace ngincc {
                 //! \brief describe the connection in human-readable way
                 const std::string to_string() const;
 
-                long long get_token() const;
+                inline long long get_token() const {
+                    return token;
+                }
 
                 //! \brief It allowes state transision
                 int set_state(connection_state*next_state);
 
                 //! \brief get connection state
-                bool in_state(const std::type_info& );
+                bool in_state(const std::type_info& ) const;
                 //connection_state*get_state();
 
                 int set_login_name(const std::string& login_name);
@@ -58,13 +66,10 @@ namespace ngincc {
                 long long token;                                //!< unique identifier of the connection
                 ngincc::core::event_loop& eloop;
                 std::string login_name;
-                ngincc::core::buffer_coder recv_buffer;
                 ngincc::apps::chat::connection_state* state;    //!< state of connection
 
                 //! it is used for broadcast/setting the name
                 int on_response_callback(std::string& command);
-                int on_client_data(int fd, int status);
-                int on_client_data_helper();
             };
         }
     }

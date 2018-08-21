@@ -8,6 +8,7 @@ NGINCC_NET_SOURCE_FILES = \
 src/server_stack.cc \
 src/raw_pipeline.cc \
 src/tcp_listener_server.cc \
+src/default_net_channel.cc \
 src/net_subsystem.cc
 
 NGINCC_BASE_LDFLAGS=$(top_builddir)/base/libngincc_base.la

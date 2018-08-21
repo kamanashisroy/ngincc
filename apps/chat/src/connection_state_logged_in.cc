@@ -36,18 +36,12 @@ int connection_state_logged_in::process_chat_request(
         command_reader >> discard_forward_slash;
 
         std::vector<string> command_args;
-        for(string token;std::getline(command_reader,token,command_reader.widen(' '));) {
+        char delim;
+        for(string token; command_reader >> token; command_reader >> delim) {
             if(token.size() == 0) {
                 continue;
             }
             command_args.push_back(token);
-        }
-
-        // read the last token
-        string last_token;
-        command_reader >> last_token;
-        if(last_token.size()) {
-            command_args.push_back(last_token);
         }
         if(command_args[0][0] == '_') {
             // do not allow system command
@@ -64,7 +58,7 @@ int connection_state_logged_in::process_chat_request(
         return chat_plug.plug_call(request, std::tie(command_args,*this));
     } else { // try user log-in
         // what to do here ? show help ?
-        chat.send("TODO Show a list of rooms", 0);
+        chat.net_send("TODO Show a list of rooms", 0);
     }
     return 0;
 }

@@ -2,3 +2,5 @@
 *.gcno
 *.gcda
 *.o
+*.lo
+*.la

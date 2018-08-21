@@ -51,6 +51,10 @@ int chat_server_stack::on_server_close() {
     return 0;
 }
 
+int chat_server_stack::get_port() const {
+    return NGINZ_CHAT_PORT;
+}
+
 int chat_server_stack::set_server_fd(int server_fd) {
     // WHAT TO DO ??
     return 0;
@@ -59,19 +63,27 @@ int chat_server_stack::set_server_fd(int server_fd) {
 int chat_server_stack::on_connection_bubble(int fd, const string& rpc_space) {
 	if(is_quiting)
 		return -1;
-	int ret = 0;
+	/*int ret = 0;
 	// create new connection
-	std::unique_ptr<chat_connection> chat(new chat_connection(fd,eloop,factory.get_connected()));
+	std::unique_ptr<chat_connection> chat(new chat_connection(fd,eloop,raw_pipe,factory.get_connected()));
     if(!chat) {
 		syslog(LOG_ERR, "Could not create chat object\n");
 		close(fd);
 		return -1;
     }
 
-    chat->on_recv(rpc_space);
     factory.add_chat_connection(chat);
+    factory.create_chat_connection(fd);*/
 
-	return ret;
+    
+	auto& chat = factory.create_chat_connection(fd, factory.get_connected());
+    if(!chat) {
+		syslog(LOG_ERR, "Could not create chat object\n");
+		close(fd);
+		return -1;
+    }
+    chat->on_recv(rpc_space);
+	return 0;
 }
 
 chat_server_stack::chat_server_stack(
@@ -84,7 +96,7 @@ chat_server_stack::chat_server_stack(
     , raw_pipe(raw_pipe)
     , is_quiting(false)
     , lb(base_pipe)
-    , factory(net_plug,chat_plug) {
+    , factory(net_plug,chat_plug,eloop,raw_pipe) {
 	// aroop_txt_embeded_set_static_string(&cannot_process, "Cannot process the request\n");
 	// aroop_txt_embeded_buffer(&recv_buffer, NGINZ_MAX_CHAT_MSG_SIZE);
 	// protostack_set(NGINZ_CHAT_PORT, &chat_protostack);
