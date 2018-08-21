@@ -18,6 +18,9 @@ namespace ngincc {
             uint8_t* data();
             unsigned int capacity() const;
             std::streamsize out_avail() const;
+            virtual std::char_traits<uint8_t>::pos_type seekpos(
+                std::char_traits<uint8_t>::pos_type pos
+                , std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) override;
         protected:
             //virtual int_type underflow() override;
             //virtual int_type overflow(int_type ch) override;
@@ -33,9 +36,10 @@ namespace ngincc {
             binary_coder& operator<<=(const std::string &strval);
             binary_coder& operator>>=(uint32_t &intval);
             binary_coder& operator>>=(std::string &strval);
-            static std::string canary_begin;
-            static std::string canary_end;
-            // TODO debug-dump and testing
+            static int self_test();
+            static inline std::string canary_begin {"canary_begin"};
+            static inline std::string canary_end {"canary_end"};
+            // TODO debug-dump
         };
     }
 }

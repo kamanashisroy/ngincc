@@ -21,9 +21,10 @@ libngincc_net_la_SOURCES = $(NGINCC_NET_SOURCE_FILES)
 libngincc_net_la_CXXFLAGS = $(NGINCC_CXXFLAGS) $(NGINCC_NET_INCLUDES) 
 libngincc_net_la_LDFLAGS = $(NGINCC_BASE_LDFLAGS)
 
+ngincc_net_main_LDADD = $(NGINCC_BASE_LDFLAGS)
 ngincc_net_main_SOURCES = $(NGINCC_NET_SOURCE_FILES) src/main.cc
 ngincc_net_main_CXXFLAGS = $(NGINCC_CXXFLAGS) -ggdb3 -DAROOP_BASIC -DAROOP_OPP_PROFILE $(NGINCC_NET_INCLUDES) 
-ngincc_net_main_LDFLAGS= -static $(NGINCC_BASE_LDFLAGS)
+#ngincc_net_main_LDFLAGS= -static $(NGINCC_BASE_LDFLAGS)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libngincc_net@PACKAGE_SUFFIX@.pc

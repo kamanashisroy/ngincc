@@ -17,6 +17,7 @@
 
 using std::string;
 using std::ostringstream;
+using std::istringstream;
 using std::endl;
 using std::istream;
 using ngincc::core::plugin_manager;
@@ -24,6 +25,9 @@ using ngincc::core::event_loop;
 using ngincc::core::buffer_coder;
 using namespace ngincc::apps::http;
 using namespace std::placeholders;
+
+#define HTTP_DEBUG(...) syslog(__VA_ARGS__)
+//#define HTTP_DEBUG(...)
 
 http_connection::~http_connection() {
     // close_handle();
@@ -80,6 +84,7 @@ int default_http_connection::http_url_parse(string& target_url) {
 
     // TODO parse content-length and content
     for (string header; std::getline(reader,header); ) {
+	    HTTP_DEBUG(LOG_NOTICE, "default_http_connection::parsing %s", header.c_str());
 		// skip the new line(ltrim)
         header.erase(header.begin(), std::find_if(header.begin(), header.end(), [](int ch) {
             return !std::isspace(ch);
@@ -89,23 +94,23 @@ int default_http_connection::http_url_parse(string& target_url) {
 			if(header.size() > NGINZ_MAX_HTTP_HEADER_SIZE) { // too big header
 				break;
 			}
+            istringstream request_header(header);
+            char delim;
+            int token_index = 0;
             // GET url HTTP/1.1
-            for(int token_index = 0,pos = 0;(pos = header.find(" ")) != (int)std::string::npos;token_index++) {
-                if(pos == 0) {
-                    token_index--;
-                    continue;
-                }
+            for(string token;request_header >> token;request_header >> delim, token_index++) {
                 switch(token_index) {
                     case 0: // GET/PUT
+	                    HTTP_DEBUG(LOG_NOTICE, "default_http_connection::parsing GET:%s", token.c_str());
                     break;
                     case 1: // URL
-                        target_url = header.substr(0,pos);
+	                    HTTP_DEBUG(LOG_NOTICE, "default_http_connection::parsing URL:%s", token.c_str());
+                        target_url = token;
                         ret = 0;
                     break;
                     default:
                     break;
                 }
-                header.erase(0, pos + 1);
             }
 		} else if(header.size() <= 4) { // if it is \r\n\r\n
 			// the content starts here
@@ -121,23 +126,25 @@ int default_http_connection::http_url_parse(string& target_url) {
 int default_http_connection::on_client_data(int fd, int status) {
 	// assert(strm.fd == fd);
 	int count = recv(fd, recv_buffer.data(), recv_buffer.capacity(), 0);
+	HTTP_DEBUG(LOG_NOTICE, "default_http_connection::on_client_data:>>Received client data");
 	if(count == 0) {
-		syslog(LOG_INFO, "Client disconnected\n");
+		HTTP_DEBUG(LOG_NOTICE, "Client disconnected\n");
 		close_handle();
 		return -1;
 	}
 	if(count >= NGINZ_MAX_HTTP_MSG_SIZE) {
-		syslog(LOG_INFO, "Disconnecting HTTP client for too big data input\n");
+		syslog(LOG_NOTICE, "Disconnecting HTTP client for too big data input\n");
 		close_handle();
 		return -1;
 	}
     recv_buffer.set_rd_length(count);
+	HTTP_DEBUG(LOG_NOTICE, "read %d bytes", count);
 	//return x.processPacket(pkt);
 	string url;
 	int response = http_url_parse(url);
     if(url.size() == 0) {
         // could not parse the user url, may be we cannot parse the fragmented request
-		syslog(LOG_INFO, "Disconnecting HTTP client, we could not parse the url\n");
+		syslog(LOG_NOTICE, "Disconnecting HTTP client, we could not parse the url\n");
         close_handle();
         return -1;
     }

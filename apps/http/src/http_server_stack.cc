@@ -29,6 +29,9 @@ using ngincc::core::binary_coder;
 using namespace ngincc::apps::http;
 using namespace std::placeholders;
 
+//#define HTTP_DEBUG(...) syslog(__VA_ARGS__)
+#define HTTP_DEBUG(...)
+
 #define HTTP_WELCOME "http/welcome"
 int http_server_stack::on_tcp_connection(int fd) {
     static const string command(HTTP_WELCOME);
@@ -60,6 +63,7 @@ int http_server_stack::set_server_fd(int server_fd) {
 }
 
 int http_server_stack::on_connection_bubble(int fd, const string& command) {
+	HTTP_DEBUG(LOG_NOTICE, "http_server_stack::on_connection_bubble:making new client");
 	if(is_quiting)
 		return 0;
 
@@ -80,6 +84,7 @@ int http_server_stack::on_connection_bubble(int fd, const string& command) {
     // register it in the event loop
     clients.push_front(std::move(http));
     // TODO execute the command
+	HTTP_DEBUG(LOG_NOTICE, "http_server_stack::on_connection_bubble:waiting for client requests");
 	return 0;
 }
 

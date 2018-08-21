@@ -18,10 +18,10 @@ libngincc_http_la_SOURCES = $(NGINCC_HTTP_SOURCE_FILES)
 libngincc_http_la_CXXFLAGS = $(NGINCC_CXXFLAGS) $(NGINCC_HTTP_INCLUDES)
 libngincc_http_la_LDFLAGS = $(NGINCC_HTTP_LDFLAGS)
 
+ngincc_http_main_LDADD = ${NGINCC_HTTP_LDFLAGS}
 ngincc_http_main_SOURCES = $(NGINCC_HTTP_SOURCE_FILES) src/main.cc
-#ngincc_http_main_CXXFLAGS = $(NGINCC_CXXFLAGS) -ggdb3 -DAROOP_BASIC -DAROOP_OPP_PROFILE $(NGINCC_HTTP_INCLUDES) 
 ngincc_http_main_CXXFLAGS = $(NGINCC_CXXFLAGS) $(NGINCC_HTTP_INCLUDES) 
-ngincc_http_main_LDFLAGS= -static $(NGINCC_HTTP_LDFLAGS)
+#ngincc_http_main_LDFLAGS= -static $(NGINCC_HTTP_LDFLAGS)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libngincc_http@PACKAGE_SUFFIX@.pc

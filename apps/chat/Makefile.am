@@ -39,8 +39,9 @@ libngincc_chat_la_SOURCES = $(NGINCC_CHAT_SOURCE_FILES)
 libngincc_chat_la_CXXFLAGS = $(NGINCC_CXXFLAGS) $(NGINCC_CHAT_INCLUDES)
 libngincc_chat_la_LDFLAGS = $(NGINCC_CHAT_LDFLAGS)
 
+ngincc_chat_main_LDADD = $(NGINCC_CHAT_LDFLAGS)
 ngincc_chat_main_SOURCES = $(NGINCC_CHAT_SOURCE_FILES) src/main.cc
 ngincc_chat_main_CXXFLAGS = $(NGINCC_CXXFLAGS) -O2 $(NGINCC_CHAT_INCLUDES) 
-ngincc_chat_main_LDFLAGS= -static $(NGINCC_CHAT_LDFLAGS)
+#ngincc_chat_main_LDFLAGS= -static $(NGINCC_CHAT_LDFLAGS)
 
 #MAINTAINERCLEANFILES = ngincc.pc

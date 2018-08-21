@@ -5,6 +5,7 @@
 #include <string>
 #include <stdexcept>
 
+#include "log.hxx"
 #include "ngincc_config.h"
 //#include "module.hxx"
 //#include "plugin_manager.hxx"
@@ -14,9 +15,6 @@ using std::string;
 using std::overflow_error;
 using ngincc::core::binary_coder;
 using ngincc::core::buffer_coder;
-
-string binary_coder::canary_begin = "[canary_end]";
-string binary_coder::canary_end = "[canary_end]";
 
 buffer_coder::buffer_coder() {
     reset();
@@ -48,6 +46,24 @@ std::streamsize buffer_coder::out_avail() const {
     return std::distance(pptr(),epptr());
 }
 
+std::char_traits<uint8_t>::pos_type buffer_coder::seekpos(
+    std::char_traits<uint8_t>::pos_type pos
+    , std::ios_base::openmode which) {
+    if(std::ios_base::in & which) {
+        if(pos > std::distance(data(),egptr())) {
+            throw overflow_error("cannot set the read position");
+        }
+        setg(data()+pos,data(),egptr());
+    }
+    if(std::ios_base::out & which) {
+        if(pos > std::distance(data(),epptr())) {
+            throw overflow_error("cannot set the write position");
+        }
+        setp(data()+pos,epptr());
+    }
+    return pos;
+}
+
 binary_coder::binary_coder(buffer_coder &buffer) : std::basic_iostream<uint8_t>(&buffer) {
 }
 
@@ -65,7 +81,7 @@ binary_coder& binary_coder::operator<<=(const uint32_t &intval) {
     buf[len++] = (unsigned char)((intval & 0xFF00)>>8);
     buf[len++] = (unsigned char)(intval & 0x00FF);
     buf[0] = len-1;
-    write(buf,len+1);
+    write(buf,len);
     return *this;
 }
 
@@ -115,6 +131,60 @@ binary_coder& binary_coder::operator>>=(string &strval) {
     return *this;
 }
 
+#define BINARY_CODER_LOG syslog
+
+int binary_coder::self_test() {
+    const uint32_t expval = 10;
+    buffer_coder buffer;
+    binary_coder outcoder(buffer);
+
+    outcoder <<= binary_coder::canary_begin;
+    outcoder <<= expval;
+    outcoder <<= binary_coder::canary_end;
+
+	BINARY_CODER_LOG(LOG_NOTICE, "binary_coder::self_test:wrote %s %d %s", binary_coder::canary_begin.c_str(), expval, binary_coder::canary_end.c_str());
+
+    buffer.set_rd_length(buffer.out_avail());
+    binary_coder incoder(buffer);
+
+    string in_begin,in_end;
+    uint32_t inval;
+    
+    if( !(incoder >>= in_begin)
+        || !(incoder >>= inval)
+        || !(incoder >>= in_end)) {
+	    BINARY_CODER_LOG(LOG_NOTICE, "binary_coder::self_test:read-failed %s %d %s", in_begin.c_str(), inval, in_end.c_str());
+        throw std::range_error("binary_coder self-test failed");
+    }
+
+	BINARY_CODER_LOG(LOG_NOTICE, "binary_coder::self_test:read %s %d %s", in_begin.c_str(), inval, in_end.c_str());
+
+    if(in_begin != binary_coder::canary_begin
+        || inval != expval
+        || in_end != binary_coder::canary_end) {
+        throw std::range_error("binary_coder self-test failed(mismatch)");
+    }
+
+    // reread
+    buffer.seekpos(0, std::ios_base::in);
+
+    if( !(incoder >>= in_begin)
+        || !(incoder >>= inval)
+        || !(incoder >>= in_end)) {
+	    BINARY_CODER_LOG(LOG_NOTICE, "binary_coder::self_test:reread-failed %s %d %s", in_begin.c_str(), inval, in_end.c_str());
+        throw std::range_error("binary_coder self-test(reread) failed");
+    }
+
+	BINARY_CODER_LOG(LOG_NOTICE, "binary_coder::self_test:reread %s %d %s", in_begin.c_str(), inval, in_end.c_str());
+
+    if(in_begin != binary_coder::canary_begin
+        || inval != expval
+        || in_end != binary_coder::canary_end) {
+        throw std::range_error("binary_coder self-test(reread) failed(mismatch)");
+    }
+    return 0;
+}
+
 #if 0
 
 int binary_coder::debug_dump(aroop_txt_t*buffer) {
@@ -137,28 +207,7 @@ int binary_coder::debug_dump(aroop_txt_t*buffer) {
 	return 0;
 }
 
-static int binary_coder_test_helper(int expval) {
-	aroop_txt_t bin = {};
-	aroop_txt_embeded_stackbuffer(&bin, 255);
-	binary_coder_reset_for_pid(&bin, expval);
-	binary_pack_int(&bin, expval);
-	aroop_txt_t str = {};
-	aroop_txt_embeded_set_static_string(&str, "test"); 
-	binary_pack_string(&bin, &str);
-	binary_coder_debug_dump(&bin);
 
-	int intval = 0;
-	int intval2 = 0;
-	aroop_txt_t strval = {};
-	binary_unpack_int(&bin, 0, &intval);
-	binary_unpack_int(&bin, 1, &intval2);
-	binary_unpack_string(&bin, 2, &strval);
-	
-	aroop_txt_zero_terminate(&strval);
-	aroop_txt_zero_terminate(&str);
-	//printf(" [%s!=%s] and [%d!=%d]\n", aroop_txt_to_string(&strval), aroop_txt_to_string(&str), intval, expval);
-	return !(intval == expval && intval2 == expval && aroop_txt_equals(&strval, &str));
-}
 
 static int binary_coder_test(aroop_txt_t*input, aroop_txt_t*output) {
 	aroop_txt_embeded_buffer(output, 512);

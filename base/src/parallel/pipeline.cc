@@ -20,7 +20,7 @@ using std::string;
 using std::istringstream;
 using std::ostringstream;
 using std::system_error;
-using std::logic_error;
+using std::runtime_error;
 using std::function;
 using std::vector;
 using ngincc::core::event_loop;
@@ -28,6 +28,8 @@ using ngincc::core::buffer_coder;
 using ngincc::core::plugin_manager;
 using ngincc::core::parallel::pipeline;
 using namespace std::placeholders;
+
+#define PIPELINE_DEBUG syslog
 
 /****************************************************/
 /********* This file is really tricky ***************/
@@ -49,7 +51,7 @@ pipeline::pipeline(plugin_manager& core_plug, event_loop& eloop)
 	/* make all the pipes beforehand, so that all of the nodes know each other */
 	for(i = 0; i < MAX_PROCESS_COUNT; i++) {
 		if(socketpair(AF_UNIX, SOCK_DGRAM, 0, nodes[i].fd) || socketpair(AF_UNIX, SOCK_DGRAM, 0, nodes[i].raw_fd)) {
-			syslog(LOG_ERR, "Failed to create pipe:%s\n", strerror(errno));
+			syslog(LOG_ERR, "Failed to create pipe:%s", strerror(errno));
 			throw system_error(errno,std::system_category(),"Failed to create pipe");
 		}
 	}
@@ -148,7 +150,7 @@ int pipeline::pp_send(int dnid, uint8_t *msg, unsigned int msg_len) const {
 	} else {
 		nd = pp_find_node(dnid);
         if(NULL == nd || nd->nid != dnid) {
-            throw logic_error("destination id retrieval error");
+            throw runtime_error("destination id retrieval error");
         }
 		return pp_simple_sendmsg(nd->fd[0], msg, msg_len);
 	}
@@ -186,7 +188,7 @@ int pipeline::pp_simple_recvmsg_helper(int through) {
 	if(msg.msg_iovlen == 1 && iov[0].iov_len > 0) {
         // update the length of receive buffer
         recv_buffer.set_rd_length(iov[0].iov_len);
-		syslog(LOG_NOTICE, "received data:%ld=%ld\n", recv_buffer.in_avail(),iov[0].iov_len);
+		PIPELINE_DEBUG(LOG_NOTICE, "received data:%ld=%ld\n", recv_buffer.in_avail(),iov[0].iov_len);
 	}
 	return 0;
 }
@@ -194,7 +196,7 @@ int pipeline::pp_simple_recvmsg_helper(int through) {
 
 int pipeline::on_bubbles(int fd, int events) {
     if(!mynode || (fd != mynode->fd[1])) {
-        throw logic_error("on_bubble: the event-fd mismatch with the pipe-input-fd");
+        throw runtime_error("on_bubble: the event-fd mismatch with the pipe-input-fd");
     }
 	if(NGINZ_POLL_CLOSE_FLAGS == (events & NGINZ_POLL_CLOSE_FLAGS)) {
 		// TODO check if it happens
@@ -227,14 +229,17 @@ int pipeline::on_bubbles(int fd, int events) {
     if(start != binary_coder::canary_begin) {
         throw std::underflow_error("on_bubbles:canary check failed");
     }
+
+    // 1 = srcpid, 2 = service
     coder >>= srcpid;
     coder >>= service;
+    recv_buffer.seekpos(0);
 	if(service.size()) {
+		PIPELINE_DEBUG(LOG_NOTICE, "[pid:%d]executing-service:%s", getpid(), service.c_str());
 		if(core_plug.plug_call<ngincc::core::buffer_coder&>(service, {recv_buffer})) {
 			syslog(LOG_NOTICE, "[pid:%d]\tplugin returns error\n", getpid());
 		}
 	}
-	//syslog(LOG_NOTICE, "[pid:%d]\texecuting command:%s", getpid(), aroop_txt_to_string(&x));
 	return 0;
 }
 
@@ -281,7 +286,7 @@ int pipeline::pp_fork_parent_after_callback(int child_pid) {
 		}
 	}
 	if(getpid() != mynode->nid) {
-        throw logic_error("mynode pid mismatch after child creation");
+        throw runtime_error("mynode pid mismatch after child creation");
     }
 	/* check if the forking is all complete */
 	if(nodes[MAX_PROCESS_COUNT-1].nid) { /* if there is no more forking cleanup */
@@ -304,20 +309,26 @@ int pipeline::pp_fork_parent_after_callback(int child_pid) {
 }
 
 int pipeline::pp_update_siblings_pid(buffer_coder& msgbuf) {
-    string start;
+    string start,finish;
 	uint32_t srcpid = 0;
-    string hook = 0;
+    string hook;
 	uint32_t nid = 0;
 	uint32_t index = 0;
+
+    //msgbuf.seekpos(0,std::ios_base::in);
     binary_coder coder(msgbuf);
     coder >>= start;
     if(start != binary_coder::canary_begin) {
-        throw std::underflow_error("on_bubbles:canary check failed");
+        throw std::underflow_error("pp_update_siblings_pid:canary check failed(begin)");
     }
     coder >>= srcpid;
     coder >>= hook;
     coder >>= nid;
     coder >>= index;
+    coder >>= finish;
+    if(finish != binary_coder::canary_end) {
+        throw std::underflow_error("pp_update_siblings_pid:canary check failed(end)");
+    }
 	//binary_unpack_int(input, 2, &nid); // id/token
 	//binary_unpack_int(input, 3, &index); // target index
 	if((nodes+index) != mynode) {

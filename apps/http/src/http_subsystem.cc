@@ -16,7 +16,7 @@ using namespace ngincc::apps::http;
 
 http_subsystem::http_subsystem()
     : http_stack(base_plug, base_event_loop, base_pipe, raw_pipe) {
-    tcp_server_list.push_back(http_stack);
+    tcp_server_list.emplace_back(std::ref(http_stack));
     // tcp_listener.add_server_stack(new http_server_stack(base_plug, base_event_loop, base_pipe, raw_pipe));
 
     /*std::function<int(vector<std::unique_ptr<server_stack> >&)> callback = [this] (vector<std::unique_ptr<server_stack> >& output) {

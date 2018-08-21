@@ -68,6 +68,7 @@ base_subsystem::base_subsystem()
     if(!base) {
         base = this;
     }
+    binary_coder::self_test();
 }
 
 base_subsystem::~base_subsystem() {
