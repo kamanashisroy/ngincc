@@ -16,6 +16,7 @@
 #include "load_balancer.hxx"
 #include "chat/chat_server_stack.hxx"
 #include "chat/chat_connection.hxx"
+#include "chat/chat_factory.hxx"
 //#include "chat/chat_zombie.h"
 //#include "chat/chat_plugin_manager.h"
 
@@ -99,11 +100,12 @@ chat_server_stack::chat_server_stack(
     ,pipeline& base_pipe
     ,raw_pipeline& raw_pipe
     ,plugin_manager& chat_plug
+    ,chat_factory& factory
     ) : eloop(eloop)
     , raw_pipe(raw_pipe)
     , is_quiting(false)
     , lb(base_pipe)
-    , factory(net_plug,chat_plug,eloop,raw_pipe) {
+    , factory(factory) {
 	// aroop_txt_embeded_set_static_string(&cannot_process, "Cannot process the request\n");
 	// aroop_txt_embeded_buffer(&recv_buffer, NGINZ_MAX_CHAT_MSG_SIZE);
 	// protostack_set(NGINZ_CHAT_PORT, &chat_protostack);

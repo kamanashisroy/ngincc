@@ -5,6 +5,7 @@
 #include "event_loop.hxx"
 #include "log.hxx"
 #include "plugin_manager.hxx"
+#include "chat/chat_factory.hxx"
 #include "server_stack.hxx"
 #include "chat_subsystem.hxx"
 
@@ -15,9 +16,10 @@ using ngincc::net::server_stack;
 using namespace ngincc::apps::chat;
 
 chat_subsystem::chat_subsystem()
-    : chat_stack(base_plug, base_event_loop, base_pipe, raw_pipe, chat_plug)
-    , adb_master(base_plug, base_pipe)
-    , adb_client(base_pipe) {
+    : adb_master(base_plug, base_pipe)
+    , adb_client(base_pipe)
+    , factory(base_plug, chat_plug, base_event_loop, raw_pipe, adb_client)
+    , chat_stack(base_plug, base_event_loop, base_pipe, raw_pipe, chat_plug, factory) {
     tcp_server_list.push_back(chat_stack);
 }
 

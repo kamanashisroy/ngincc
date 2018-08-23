@@ -23,8 +23,8 @@ using ngincc::db::async_db_master;
 using namespace std::placeholders;
 
 
-//#define DB_LOG(...) syslog(__VA_ARGS__)
-#define DB_LOG(...)
+#define DB_LOG(...) syslog(__VA_ARGS__)
+//#define DB_LOG(...)
 
 /*int noasync_db_get(aroop_txt_t*key, aroop_txt_t*val) {
 	aroop_assert(is_master());
@@ -133,6 +133,14 @@ int async_db_master::cas_hook(buffer_coder& recv_buffer) {
 	string cb_hook;
 	// 0 = srcpid, 1 = command, 2 = token, 3 = cb_hook, 4 = key, 5 = newval, 6 = oldval
     binary_coder coder(recv_buffer);
+
+    // canary check
+    string can_start;
+    coder >>= can_start;
+    if(can_start != binary_coder::canary_begin) {
+        throw std::underflow_error("cas_hook:canary check failed");
+    }
+
     coder >>= srcpid;
     coder >>= service;
     coder >>= cb_token;
@@ -163,7 +171,16 @@ int async_db_master::sin_hook(buffer_coder& recv_buffer) {
 	uint32_t srcpid = 0;
 	uint32_t cb_token = 0;
 	string cb_hook;
+    recv_buffer.seekpos(0);
     binary_coder coder(recv_buffer);
+
+    // canary check
+    string can_start;
+    coder >>= can_start;
+    if(can_start != binary_coder::canary_begin) {
+        throw std::underflow_error("sin_hook:canary check failed");
+    }
+
 	// 0 = srcpid, 1 = service/command, 2 = token, 3 = cb_hook, 4 = key, 5 = newval, 6 = oldval
     coder >>= srcpid;
     coder >>= service;
@@ -194,6 +211,14 @@ int async_db_master::unset_hook(buffer_coder& recv_buffer) {
 	uint32_t cb_token;
 	string cb_hook;
     binary_coder coder(recv_buffer);
+
+    // canary check
+    string can_start;
+    coder >>= can_start;
+    if(can_start != binary_coder::canary_begin) {
+        throw std::underflow_error("unset_hook:canary check failed");
+    }
+
 	// 0 = srcpid, 1 = command, 2 = token, 3 = cb_hook, 4 = key, 5 = newval, 6 = oldval
     coder >>= srcpid;
     coder >>= service;
@@ -223,6 +248,14 @@ int async_db_master::get_hook(buffer_coder& recv_buffer) {
 	uint32_t cb_token;
 	string cb_hook;
     binary_coder coder(recv_buffer);
+
+    // canary check
+    string can_start;
+    coder >>= can_start;
+    if(can_start != binary_coder::canary_begin) {
+        throw std::underflow_error("get_hook:canary check failed");
+    }
+
 	// 0 = srcpid, 1 = command, 2 = token, 3 = cb_hook, 4 = key, 5 = val
     coder >>= srcpid;
     coder >>= service;
@@ -246,6 +279,7 @@ int async_db_master::db_dump(vector<string>& cmdargs, ostringstream& output) {
 
 //! \brief attach all the db-hooks
 int async_db_master::start(vector<string>& cmd_args, ostringstream& output) {
+    is_master = true;
 
     // subscribe to asyncdb/sin/request
     std::function<int(buffer_coder&)> callback = std::bind(&async_db_master::cas_hook,this,_1);

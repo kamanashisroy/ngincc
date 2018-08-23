@@ -14,6 +14,7 @@ using std::string;
 using std::ostringstream;
 using ngincc::core::plugin_manager;
 using ngincc::core::event_loop;
+using ngincc::db::async_db;
 using ngincc::net::raw_pipeline;
 using ngincc::apps::chat::chat_factory;
 using ngincc::apps::chat::connection_state;
@@ -58,15 +59,15 @@ connection_state*chat_factory::get_connected() {
 }
 
 connection_state*chat_factory::get_logged_in() {
-    return &connected_state;
+    return &logged_in_state;
 }
 
 connection_state*chat_factory::get_in_room() {
-    return &connected_state;
+    return &in_room_state;
 }
 
 connection_state*chat_factory::get_quitting() {
-    return &connected_state;
+    return &quitting_state;
 }
 
 int chat_factory::close_all() {
@@ -86,11 +87,13 @@ chat_factory::chat_factory(
     , plugin_manager& chat_plug
     , event_loop& eloop
     , raw_pipeline& raw_pipe
+    , async_db& adb_client
     ) : eloop(eloop)
     , raw_pipe(raw_pipe)
-    , connected_state(core_plug, chat_plug, *this)
-    , logged_in_state(chat_plug)
-    , in_room_state(chat_plug)
+    , adb_client(adb_client)
+    , connected_state(core_plug, chat_plug, *this, adb_client)
+    , logged_in_state(chat_plug, *this, adb_client)
+    , in_room_state(chat_plug, *this, adb_client)
     , quitting_state(chat_plug)
      {
     std::function<int(vector<string>&, ostringstream&)> show_callback

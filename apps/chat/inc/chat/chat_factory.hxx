@@ -16,6 +16,9 @@ namespace ngincc {
         // forward declaration
         class raw_pipeline;
     }
+    namespace db {
+        class async_db;
+    }
     namespace apps {
         namespace chat {
             class chat_factory {
@@ -24,7 +27,8 @@ namespace ngincc {
                     ngincc::core::plugin_manager& core_plug
                     , ngincc::core::plugin_manager &chat_plug
                     , ngincc::core::event_loop& eloop
-                    , ngincc::net::raw_pipeline& raw_pipe);
+                    , ngincc::net::raw_pipeline& raw_pipe
+                    , ngincc::db::async_db& adb_client);
                 ~chat_factory();
 
                 //! \addgroup chat connection list
@@ -42,6 +46,7 @@ namespace ngincc {
             private:
                 ngincc::core::event_loop &eloop;
                 ngincc::net::raw_pipeline &raw_pipe;
+                ngincc::db::async_db& adb_client;
                 //! TODO instead of unique_ptr, use object-pool
                 std::vector<std::unique_ptr<chat_connection> > clients;
                 connection_state_connected connected_state;

@@ -11,14 +11,19 @@ using std::string;
 using std::istringstream;
 using std::endl;
 //using std::vector;
+using ngincc::db::async_db;
 using ngincc::core::plugin_manager;
 using ngincc::apps::chat::chat_connection;
 using ngincc::apps::chat::connection_state;
 using ngincc::apps::chat::connection_state_logged_in;
+using ngincc::apps::chat::chat_factory;
 //using namespace std::placeholders;
 
-connection_state_logged_in::connection_state_logged_in(plugin_manager& chat_plug)
-    : chat_plug(chat_plug) {
+connection_state_logged_in::connection_state_logged_in(
+    plugin_manager& chat_plug
+    , chat_factory& factory
+    , async_db& adb_client)
+    : chat_plug(chat_plug), factory(factory), adb_client(adb_client) {
 }
 
 connection_state_logged_in::~connection_state_logged_in() {
@@ -47,7 +52,7 @@ int connection_state_logged_in::process_chat_request(
             // do not allow system command
             return 0;
         }
-        string request("state/connected/"+command_args[0]);
+        string request("state/logged_in/"+command_args[0]);
         /*std::tuple<std::reference_wrapper<vector<string>>, std::reference_wrapper<chat_connection> > args(command_args,*this);
         return chat_plug.plug_call<vector<string>&,chat_connection&>(request, std::move(command_args), args);*/
         /*return chat_plug.plug_call<vector<string>&,chat_connection&>(

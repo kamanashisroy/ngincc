@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <unistd.h>
 
 #include "ngincc_config.h"
 #include "log.hxx"
@@ -21,7 +22,7 @@ static int run_http() {
 }
 
 int main(int argc, char**argv) {
-	//daemon(0,0);
+	daemon(0,0);
 	setlogmask (LOG_UPTO (LOG_NOTICE));
 	openlog ("nginz_http", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
     run_http();

@@ -10,7 +10,6 @@
 #include "binary_coder.hxx"
 #include "load_balancer.hxx"
 #include "chat_connection_state.hxx"
-#include "chat_factory.hxx"
 
 namespace ngincc {
     namespace core {
@@ -27,7 +26,9 @@ namespace ngincc {
     }
     namespace apps {
         namespace chat {
-            class chat_connection; // forward declaration
+            // forward declaration
+            class chat_connection;
+            class chat_factory;
             //! \brief chat-server creates chat-connection on tcp-client accept
             //!
             //! While the server listen in the master, the chat-connection
@@ -42,6 +43,7 @@ namespace ngincc {
                     , ngincc::core::parallel::pipeline& base_pipe
                     , ngincc::net::raw_pipeline& raw_pipe
                     , ngincc::core::plugin_manager& chat_plug
+                    , chat_factory& factory
                 );
                 virtual ~chat_server_stack() override;
                 //! \brief when a tcp-client is accepted
@@ -62,7 +64,7 @@ namespace ngincc {
                 bool is_quiting;
                 ngincc::core::buffer_coder command_buffer;
                 ngincc::apps::round_robin_load_balancer lb;
-                chat_factory factory;
+                chat_factory& factory;
             };
         }
     }

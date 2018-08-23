@@ -11,14 +11,19 @@ using std::string;
 using std::istringstream;
 using std::endl;
 //using std::vector;
+using ngincc::db::async_db;
 using ngincc::core::plugin_manager;
 using ngincc::apps::chat::chat_connection;
 using ngincc::apps::chat::connection_state;
 using ngincc::apps::chat::connection_state_in_room;
+using ngincc::apps::chat::chat_factory;
 //using namespace std::placeholders;
 
-connection_state_in_room::connection_state_in_room(plugin_manager& chat_plug)
-    : chat_plug(chat_plug) {
+connection_state_in_room::connection_state_in_room(
+    plugin_manager& chat_plug
+    , chat_factory& factory
+    , async_db& adb_client)
+    : chat_plug(chat_plug), factory(factory), adb_client(adb_client) {
 }
 
 connection_state_in_room::~connection_state_in_room() {

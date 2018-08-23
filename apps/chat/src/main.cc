@@ -3,6 +3,11 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <execinfo.h>
+#include <signal.h>
+#include <unistd.h>
 
 #include "ngincc_config.h"
 #include "log.hxx"
@@ -13,6 +18,20 @@
 
 using ngincc::apps::chat::chat_subsystem;
 
+void handler(int sig) {
+    void *array[20];
+    size_t size;
+
+    // get void*'s for all entries on the stack
+    size = backtrace(array, sizeof(array)/sizeof(array[0]));
+
+    // print out all the frames to stderr
+    std::cerr << "Dumping stack (signal=" << sig << ")" << std::endl;
+    backtrace_symbols_fd(array, size, STDERR_FILENO);
+    std::cerr << "Exiting .." << std::endl;
+    exit(EXIT_FAILURE);
+}
+
 static int run_chat() {
     chat_subsystem chat;
     chat.parallel_init();
@@ -22,6 +41,7 @@ static int run_chat() {
 
 int main(int argc, char**argv) {
 	//daemon(0,0);
+    signal(SIGABRT, handler);
 	setlogmask (LOG_UPTO (LOG_NOTICE));
 	openlog ("nginz_chat", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
     run_chat();

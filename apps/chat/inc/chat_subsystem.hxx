@@ -5,6 +5,7 @@
 #include "async_db_master.hxx"
 #include "async_db.hxx"
 #include "net_subsystem.hxx"
+#include "chat/chat_factory.hxx"
 
 namespace ngincc {
     namespace apps {
@@ -14,10 +15,11 @@ namespace ngincc {
                 chat_subsystem();
                 virtual ~chat_subsystem();
             protected:
-                ngincc::apps::chat::chat_server_stack chat_stack;
-                ngincc::core::plugin_manager chat_plug;
                 ngincc::db::async_db_master adb_master;
                 ngincc::db::async_db adb_client;
+                ngincc::core::plugin_manager chat_plug;
+                ngincc::apps::chat::chat_factory factory;
+                ngincc::apps::chat::chat_server_stack chat_stack;
             };
         }
     }

@@ -21,7 +21,7 @@ libngincc_http_la_LDFLAGS = $(NGINCC_HTTP_LDFLAGS)
 ngincc_http_main_LDADD = ${NGINCC_HTTP_LDFLAGS}
 ngincc_http_main_SOURCES = $(NGINCC_HTTP_SOURCE_FILES) src/main.cc
 ngincc_http_main_CXXFLAGS = $(NGINCC_CXXFLAGS) $(NGINCC_HTTP_INCLUDES) 
-#ngincc_http_main_LDFLAGS= -static $(NGINCC_HTTP_LDFLAGS)
+ngincc_http_main_LDFLAGS= -static $(NGINCC_HTTP_LDFLAGS)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libngincc_http@PACKAGE_SUFFIX@.pc

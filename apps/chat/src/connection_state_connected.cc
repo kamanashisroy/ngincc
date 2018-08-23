@@ -8,6 +8,7 @@
 #include "log.hxx"
 #include "module.hxx"
 #include "plugin_manager.hxx"
+#include "async_db.hxx"
 #include "chat/chat_connection.hxx"
 #include "chat/chat_connection_state.hxx"
 #include "chat/chat_factory.hxx"
@@ -18,9 +19,11 @@ using std::istringstream;
 using std::endl;
 using std::vector;
 using std::unique_ptr;
+using std::stringstream;
 using ngincc::core::plugin_manager;
 using ngincc::core::buffer_coder;
 using ngincc::core::binary_coder;
+using ngincc::db::async_db;
 using ngincc::apps::chat::chat_connection;
 using ngincc::apps::chat::connection_state;
 using ngincc::apps::chat::connection_state_connected;
@@ -29,17 +32,19 @@ using namespace std::placeholders;
 #define CHAT_DEBUG(...) syslog(__VA_ARGS__)
 //#define CHAT_DEBUG(...)
 
+static inline const string USER_PREFIX {"chat/user/"};
+static inline const string on_asyncchat_login {"on/asyncchat/login"};
+
 connection_state_connected::connection_state_connected(
         plugin_manager& core_plug
         , plugin_manager& chat_plug
         , chat_factory& factory
-    ) : chat_plug(chat_plug) , factory(factory) {
-    //std::function<int(vector<string>&,chat_connection&)> welcome_callback = std::bind(&chat_user::on_welcome_command, this, _1);
-    //chat_plug.plug_add("state/connected/_welcome", "It greets the new connection.", welcome_callback);
+        , async_db& adb_client
+    ) : chat_plug(chat_plug) , factory(factory), adb_client(adb_client) {
     //std::function<int(vector<string>&,chat_connection&)> login_callback = std::bind(&chat_user::on_login_command, this, _1);
     //chat_plug.plug_add("state/connected/user", "It tries to set user name.", login_callback);
     std::function<int(buffer_coder&)> async_login_reply_callback = std::bind(&connection_state_connected::on_login_reply, this, _1);
-    core_plug.plug_add("on/asyncchat/login", "It helps chat user to collect the hooks", std::move(async_login_reply_callback));
+    core_plug.plug_add(string(on_asyncchat_login), "It helps chat user to collect the hooks", std::move(async_login_reply_callback));
 }
 
 
@@ -89,7 +94,10 @@ int connection_state_connected::process_chat_request(
             }
         }
     } else { // try user log-in
-        try_login(chat,request);
+        istringstream request_reader(request);
+        string requested_name;
+        request_reader >> requested_name;
+        try_login(chat,requested_name);
     }
     return 0;
 }
@@ -105,39 +113,50 @@ int connection_state_connected::try_login(chat_connection& chat, const string& n
     } else if (name.size() >= NGINZ_MAX_CHAT_USER_NAME_SIZE) {
         response = "The name is too big\n";
     } else {
-        async_try_login(name, chat.get_token(), "on/asyncchat/login");
+        async_try_login(name, (uint32_t)chat.get_token(), "on/asyncchat/login");
     }
     chat.net_send(response, 0);
 	return 0;
 }
 
-#define USER_PREFIX "chat/user/"
 
 int connection_state_connected::async_logoff(const string& name) {
-    // TODO fillme
-    //string dbkey(USER_PREFIX+name)
-	//async_db_unset(-1, NULL, &name);
+    stringstream builder;
+    builder << USER_PREFIX << name;
+    adb_client.unset(-1, async_db::empty_hook, builder.str());
 	return 0;
 }
 
-int connection_state_connected::async_try_login(const string& name, int token, string&& response_hook) {
+int connection_state_connected::async_try_login(const string& name, uint32_t token, string&& response_hook) {
 	if(name.size() == 0) // sanity check
 		return -1;
-	//aroop_txt_embeded_stackbuffer(&name_key, 128);
-	//build_name_key(name, &name_key);
-	//syslog(LOG_NOTICE, "requesting user %s\n", aroop_txt_to_string(name));
-	//async_db_compare_and_swap(token, response_hook, &name_key, name, NULL);
+
+    stringstream builder;
+    builder << USER_PREFIX << name;
+    adb_client.set_if_null(token, on_asyncchat_login, builder.str(), token);
 	return 0;
 }
 
 
 int connection_state_connected::on_login_reply(buffer_coder& recv_buffer) {
+    uint32_t srcpid;
+    string service;
     uint32_t reply_token;
     uint32_t reply_status;
     string name;
 	// 0 = srcpid, 1 = reply_hook, 2 = reply_token, 3 = success, 4 = key, 5 = newvalue
     // 0 and 1 are parsed already !
     binary_coder coder(recv_buffer);
+
+    // canary check
+    string can_start;
+    coder >>= can_start;
+    if(can_start != binary_coder::canary_begin) {
+        throw std::underflow_error("on_login_reply:canary check failed");
+    }
+
+    coder >>= srcpid;
+    coder >>= service;
     coder >>= reply_token;
     coder >>= reply_status;
     coder >>= name;
