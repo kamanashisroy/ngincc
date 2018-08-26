@@ -22,7 +22,8 @@ static int run_http() {
 }
 
 int main(int argc, char**argv) {
-	daemon(0,0);
+	[[maybe_unused]] int res = 0;
+    res = daemon(0,0);
 	setlogmask (LOG_UPTO (LOG_NOTICE));
 	openlog ("nginz_http", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
     run_http();

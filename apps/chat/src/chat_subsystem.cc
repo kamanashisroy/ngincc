@@ -19,7 +19,12 @@ chat_subsystem::chat_subsystem()
     : adb_master(base_plug, base_pipe)
     , adb_client(base_pipe)
     , factory(base_plug, chat_plug, base_event_loop, raw_pipe, adb_client)
-    , chat_stack(base_plug, base_event_loop, base_pipe, raw_pipe, chat_plug, factory) {
+    , chat_stack(base_plug, base_event_loop, base_pipe, raw_pipe, chat_plug, factory)
+    , room_module_master(base_plug, adb_master, base_pipe)
+    , room_module(base_plug, chat_plug, base_pipe, factory)
+    , join_module(base_plug, chat_plug, adb_client, factory)
+    , quit_module(chat_plug)
+    , help_module(chat_plug) {
     tcp_server_list.push_back(chat_stack);
 }
 

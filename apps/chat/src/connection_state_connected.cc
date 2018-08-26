@@ -1,5 +1,5 @@
 
-//#include <memory>
+#include <memory>
 //#include <vector>
 #include <functional>
 #include <string>
@@ -90,7 +90,7 @@ int connection_state_connected::process_chat_request(
                     , std::move(command_args)
                     , std::tie(command_args,*this)
                 );*/
-                return chat_plug.plug_call(request, std::tie(command_args,*this));
+                return chat_plug.plug_call(request, std::tie(command_args,chat));
             }
         }
     } else { // try user log-in
@@ -145,7 +145,6 @@ int connection_state_connected::on_login_reply(buffer_coder& recv_buffer) {
     uint32_t reply_status;
     string name;
 	// 0 = srcpid, 1 = reply_hook, 2 = reply_token, 3 = success, 4 = key, 5 = newvalue
-    // 0 and 1 are parsed already !
     binary_coder coder(recv_buffer);
 
     // canary check

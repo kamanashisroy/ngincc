@@ -24,6 +24,8 @@ namespace ngincc {
                 , ngincc::core::parallel::pipeline& core_pipe
             );
             ~async_db_master();
+            int noasync_set(const std::string& key, const std::string& inval);
+            int noasync_get(const std::string& key, std::string& outval);
         private:
             static inline const std::string null_value{""};
             static inline const std::string compare_and_swap_app{"asyncdb/cas/request"};

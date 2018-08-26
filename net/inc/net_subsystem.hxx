@@ -3,6 +3,7 @@
 
 #include <memory>
 
+// project headers
 #include "ngincc_config.h"
 #include "module.hxx"
 #include "base_subsystem.hxx"

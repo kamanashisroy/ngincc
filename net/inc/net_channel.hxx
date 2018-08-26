@@ -2,11 +2,13 @@
 #define NGINZ_NET_CHANNEL_HXX
 
 #include <memory>
-#include "binary_coder.hxx"
 
-enum {
-	INVALID_FD = -1,
-};
+// unix headers
+#include <sys/types.h> // defines MSG_MORE
+#include <sys/socket.h>
+
+// project headers
+#include "binary_coder.hxx"
 
 /**
  * This is streaming/pipeline contruct. It allows the piping for filtering, tunneling or other purposes.
@@ -24,6 +26,10 @@ namespace ngincc {
         //! TODO use buffer coder instead of string
         class net_channel {
         public:
+            enum NET_FLAGS {
+	            INVALID_FD = -1
+                ,NET_MSG_MORE = MSG_MORE
+            };
             virtual ~net_channel() = default;
             //! \brief On data receive ..
             virtual int on_recv(const std::string& content) = 0;

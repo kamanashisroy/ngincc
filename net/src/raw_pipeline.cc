@@ -94,7 +94,7 @@ int raw_pipeline::sendmsg_helper(int through, int target, unsigned int port, con
 
 int raw_pipeline::send_socket(int destpid, int socket, unsigned int port, const string& rpc_space) {
 	int fd = pipe.pp_get_raw_fd(destpid);
-	if(INVALID_FD == fd) {
+	if(ngincc::net::net_channel::INVALID_FD == fd) {
 		syslog(LOG_ERR, "We could not find raw fd for:%d\n", destpid);
 		return -1;
 	}

@@ -49,6 +49,12 @@ namespace ngincc {
                 return 0;
             }
             //! \@}
+            auto begin() const noexcept {
+                return plugs.cbegin();
+            }
+            auto end() const noexcept {
+                return plugs.cend();
+            }
         private:
             //! TODO use hash-table/numbered,linked-list queue/radix-tree here.
             std::unordered_multimap<unsigned long long,std::tuple<std::string, std::string, std::any > > plugs;

@@ -15,6 +15,7 @@ using std::endl;
 using std::vector;
 
 plugin_manager::plugin_manager() {
+#if 0
     std::function<int(vector<string>&, ostringstream&)> callback = [this] (vector<string> &cmd_args, ostringstream &output) int {
             // show header
             output << "---------------" << endl;
@@ -31,6 +32,7 @@ plugin_manager::plugin_manager() {
             return 0;
         };
     plug_add("shake/plugin", "It dumps the available plugins", move(callback));
+#endif
 }
 
 plugin_manager::~plugin_manager() {

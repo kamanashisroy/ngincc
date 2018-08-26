@@ -1,5 +1,5 @@
 
-SUBDIRS=tests
+#SUBDIRS=tests
 
 #TARGET_BIN=ngincc_db_main
 TARGET_LAR=libngincc_db.la

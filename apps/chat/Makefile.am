@@ -12,7 +12,12 @@ src/chat_factory.cc \
 src/connection_state_connected.cc \
 src/connection_state_logged_in.cc \
 src/connection_state_in_room.cc \
-src/connection_state_quitting.cc
+src/connection_state_quitting.cc \
+src/join_room.cc \
+src/quit.cc \
+src/help.cc \
+src/room_list.cc \
+src/room_list_master.cc
 
 
 #src/room.cc \

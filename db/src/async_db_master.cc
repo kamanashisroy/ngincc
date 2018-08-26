@@ -26,13 +26,15 @@ using namespace std::placeholders;
 #define DB_LOG(...) syslog(__VA_ARGS__)
 //#define DB_LOG(...)
 
-/*int noasync_db_get(aroop_txt_t*key, aroop_txt_t*val) {
-	aroop_assert(is_master());
-	aroop_txt_t*oldval = (aroop_txt_t*)opp_hash_table_get_no_ref(&global_db, key); // no cleanup needed
-	if(oldval)
-		aroop_txt_embeded_rebuild_copy_shallow(val, oldval); // needs cleanup
-	return 0;
-}*/
+int async_db_master::noasync_set(const string& key, const string& inval) {
+	// TODO CHECK IF IT IS MASTER aroop_assert(is_master());
+	return sin_helper(key,inval);
+}
+
+int async_db_master::noasync_get(const string& key, string& outval) {
+	// TODO CHECK IF IT IS MASTER aroop_assert(is_master());
+	return get_helper(key,outval);
+}
 
 int async_db_master::reply_helper(uint32_t destpid, uint32_t cb_token, const string& cb_hook, uint32_t success, const string& key, const string& newval) {
 	// send response

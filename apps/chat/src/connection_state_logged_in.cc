@@ -60,10 +60,11 @@ int connection_state_logged_in::process_chat_request(
             , std::move(command_args)
             , std::tie(command_args,*this)
         );*/
-        return chat_plug.plug_call(request, std::tie(command_args,*this));
+        return chat_plug.plug_call(request, std::tie(command_args,chat));
     } else { // try user log-in
         // what to do here ? show help ?
         chat.net_send("TODO Show a list of rooms", 0);
+        process_chat_request(chat, "/help");
     }
     return 0;
 }
