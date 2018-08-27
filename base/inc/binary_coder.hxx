@@ -21,6 +21,7 @@ namespace ngincc {
             virtual std::char_traits<uint8_t>::pos_type seekpos(
                 std::char_traits<uint8_t>::pos_type pos
                 , std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) override;
+            std::basic_streambuf<char>* rdbuf();
         protected:
             //virtual int_type underflow() override;
             //virtual int_type overflow(int_type ch) override;

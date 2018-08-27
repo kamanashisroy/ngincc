@@ -10,7 +10,7 @@
 #include "raw_pipeline.hxx"
 
 using std::string;
-using std::istringstream;
+using std::stringstream;
 using ngincc::core::buffer_coder;
 using ngincc::core::event_loop;
 using ngincc::net::raw_pipeline;
@@ -82,13 +82,16 @@ int default_net_channel::transfer_parallel(int destpid, int proto_port, string& 
 }
 
 int default_net_channel::on_client_data_helper() {
-	if(recv_buffer.size() == 0) { // sanity check
+	if(recv_buffer.in_avail() == 0) { // sanity check
 		return 0;
 	}
-    istringstream reader(recv_buffer);
+    stringstream reader;
+    //reader.set_rdbuf(recv_buffer.rdbuf());
+    reader << recv_buffer.rdbuf();
     // NOTE we require newline at the end of data
     // TODO fix this to allow a stream or partial lines
     for (string request; std::getline(reader,request); ) {
+    //for (string request; reader.getline(request);) {
         // ltrim
         request.erase(request.begin(), std::find_if(request.begin(), request.end(), [](int ch) {
             return !std::isspace(ch);
@@ -113,7 +116,7 @@ int default_net_channel::on_client_data(int fd, int status) {
 		return 0;
     }
 	// assert(fd == chat->strm.fd);
-	int count = recv(fd, &recv_buffer[0], recv_buffer.capacity(), 0);
+	int count = recv(fd, recv_buffer.data(), recv_buffer.capacity(), 0);
 	if(count == 0) {
 		syslog(LOG_INFO, "Client disconnected");
         close_handle();
@@ -130,7 +133,7 @@ int default_net_channel::on_client_data(int fd, int status) {
         close_handle();
 		return -1;
 	}
-    recv_buffer.resize(count);
+    recv_buffer.set_rd_length(count);
 	int ret = on_client_data_helper();
 	if(INVALID_FD == fd) {
         return -1;
@@ -142,7 +145,7 @@ default_net_channel::default_net_channel(int fd, event_loop& eloop, raw_pipeline
     : fd(fd)
     , eloop(eloop)
     , raw_pipe(raw_pipe)
-    , recv_buffer(NGINZ_MAX_HTTP_MSG_SIZE, '\0')
+    //, recv_buffer
     , error(0){
     NET_DEBUG(LOG_NOTICE, "new channel for %d", fd);
     std::function<int(int,int)> data_callback = std::bind(&default_net_channel::on_client_data, this, _1, _2);

@@ -64,6 +64,10 @@ std::char_traits<uint8_t>::pos_type buffer_coder::seekpos(
     return pos;
 }
 
+std::basic_streambuf<char>* buffer_coder::rdbuf() {
+    return (std::basic_streambuf<char>*)(this);
+}
+
 binary_coder::binary_coder(buffer_coder &buffer) : std::basic_iostream<uint8_t>(&buffer) {
 }
 

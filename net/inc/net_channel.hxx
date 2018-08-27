@@ -74,7 +74,7 @@ namespace ngincc {
             //! nonblocking send buffer
             //ngincc::core::buffer_coder send_buffer;
             //! incoming data buffer
-            std::string recv_buffer;
+            ngincc::core::buffer_coder recv_buffer;
             //! error state
             int error;
             int on_client_data(int fd, int status);
