@@ -87,7 +87,7 @@ bool async_db_master::sin_helper(const string& key, const string& newval) {
         data.insert(std::make_pair(key,newval));
         success = true;
     }
-	DB_LOG(LOG_NOTICE, "--op----[key:%s]", key.c_str());
+	DB_LOG(LOG_NOTICE, "--op----[key:%s][val:%s]", key.c_str(), newval.c_str());
     return success;
 }
 
@@ -115,7 +115,7 @@ bool async_db_master::get_helper(const string& key, string& outval) {
         outval = it->second;
         success = true;
     }
-	DB_LOG(LOG_NOTICE, "--op----[key:%s]", key.c_str());
+	DB_LOG(LOG_NOTICE, "--op----[key:%s][val:%s]%d", key.c_str(), outval.c_str(), success);
     return success;
 }
 

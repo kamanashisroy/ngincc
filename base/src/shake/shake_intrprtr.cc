@@ -80,8 +80,7 @@ int shake_intrprtr::process_client(int fd) {
         istringstream command_reader(command);
 
         std::vector<string> command_args;
-        char delim;
-        for(string token;command_reader >> token;command_reader >> delim) {
+        for(string token;command_reader >> token;) {
             if(token.size() == 0) {
                 continue;
             }

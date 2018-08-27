@@ -17,7 +17,8 @@ src/join_room.cc \
 src/quit.cc \
 src/help.cc \
 src/room_list.cc \
-src/room_list_master.cc
+src/room_list_master.cc \
+src/broadcast_room.cc
 
 
 #src/room.cc \

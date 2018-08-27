@@ -11,14 +11,21 @@ namespace ngincc {
 
             // forward declaration
             class chat_connection;
+            class broadcast_room_module;
+            class chat_factory;
 
             class quit {
             public:
-                quit(ngincc::core::plugin_manager& chat_plug);
+                quit(
+                    ngincc::core::plugin_manager& chat_plug
+                    , ngincc::apps::chat::chat_factory& factory
+                    , broadcast_room_module& bast_module);
                 ~quit();
 
             private:
                 ngincc::core::plugin_manager& chat_plug;
+                ngincc::apps::chat::chat_factory& factory;
+                broadcast_room_module& bcast_module;
                 int process_quit(std::vector<std::string>& cmd_args, chat_connection& chat);
             };
         }

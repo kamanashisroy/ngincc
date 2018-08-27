@@ -70,18 +70,6 @@ int chat_server_stack::set_server_fd(int server_fd) {
 int chat_server_stack::on_connection_bubble(int conn_fd, const string& rpc_space) {
 	if(is_quiting)
 		return -1;
-	/*int ret = 0;
-	// create new connection
-	std::unique_ptr<chat_connection> chat(new chat_connection(fd,eloop,raw_pipe,factory.get_connected()));
-    if(!chat) {
-		syslog(LOG_ERR, "Could not create chat object\n");
-		close(fd);
-		return -1;
-    }
-
-    factory.add_chat_connection(chat);
-    factory.create_chat_connection(fd);*/
-
     
 	auto& chat = factory.create_chat_connection(conn_fd, factory.get_connected());
     if(!chat) {

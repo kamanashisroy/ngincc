@@ -3,6 +3,7 @@
 
 #include "module.hxx"
 #include "plugin_manager.hxx"
+#include "log.hxx"
 #include "chat/chat_connection.hxx"
 #include "chat/chat_connection_state.hxx"
 
@@ -41,11 +42,12 @@ int connection_state_logged_in::process_chat_request(
         command_reader >> discard_forward_slash;
 
         std::vector<string> command_args;
-        char delim;
-        for(string token; command_reader >> token; command_reader >> delim) {
+        for(string token; command_reader >> token; ) {
             if(token.size() == 0) {
                 continue;
             }
+            //chat.net_send(token, 0);
+            // syslog(LOG_ERR, "parsig %s", token.c_str());
             command_args.push_back(token);
         }
         if(command_args[0][0] == '_') {
@@ -63,8 +65,7 @@ int connection_state_logged_in::process_chat_request(
         return chat_plug.plug_call(request, std::tie(command_args,chat));
     } else { // try user log-in
         // what to do here ? show help ?
-        chat.net_send("TODO Show a list of rooms", 0);
-        process_chat_request(chat, "/help");
+        process_chat_request(chat, "/rooms");
     }
     return 0;
 }

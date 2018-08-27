@@ -142,3 +142,7 @@ chat_connection::~chat_connection() {
 	//pm_unplug_callback(0, chat_factory_on_softquit);
 }
 
+bool chat_connection::operator ==(const chat_connection& other) const {
+    return (this == &other) || (login_name == other.login_name);
+}
+

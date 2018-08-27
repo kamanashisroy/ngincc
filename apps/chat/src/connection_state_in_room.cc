@@ -5,6 +5,7 @@
 #include "plugin_manager.hxx"
 #include "chat/chat_connection.hxx"
 #include "chat/chat_connection_state.hxx"
+#include "chat/broadcast_room.hxx"
 
 using std::string;
 //using std::ostringstream;
@@ -22,8 +23,9 @@ using ngincc::apps::chat::chat_factory;
 connection_state_in_room::connection_state_in_room(
     plugin_manager& chat_plug
     , chat_factory& factory
-    , async_db& adb_client)
-    : chat_plug(chat_plug), factory(factory), adb_client(adb_client) {
+    , async_db& adb_client
+    , broadcast_room_module& bcast_module)
+    : chat_plug(chat_plug), factory(factory), adb_client(adb_client), bcast_module(bcast_module) {
 }
 
 connection_state_in_room::~connection_state_in_room() {
@@ -41,8 +43,7 @@ int connection_state_in_room::process_chat_request(
         command_reader >> discard_forward_slash;
 
         std::vector<string> command_args;
-        char delim;
-        for(string token; command_reader >> token; command_reader >> delim) {
+        for(string token; command_reader >> token;) {
             if(token.size() == 0) {
                 continue;
             }
@@ -63,7 +64,7 @@ int connection_state_in_room::process_chat_request(
         return chat_plug.plug_call(request, std::tie(command_args,chat));
     } else { // try user log-in
         // what to do here ? show help ?
-        chat.net_send("TODO Show a list of rooms", 0);
+        bcast_module.send_all(chat, request);
     }
     return 0;
 }

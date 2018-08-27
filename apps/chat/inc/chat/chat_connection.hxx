@@ -36,11 +36,13 @@ namespace ngincc {
 
                 ~chat_connection();
 
+                bool operator ==(const chat_connection& other) const;
+
                 // void desc(std::ostringstream& output);
                 //! \brief describe the connection in human-readable way
                 const std::string to_string() const;
 
-                inline long long get_token() const {
+                inline unsigned long long get_token() const {
                     return token;
                 }
 
@@ -52,7 +54,9 @@ namespace ngincc {
                 //connection_state*get_state();
 
                 int set_login_name(const std::string& login_name);
-                const std::string& get_login_name() const;
+                inline const std::string& get_login_name() const {
+                    return login_name;
+                }
 
                 //! \addtogroup net_channel
                 //! @{

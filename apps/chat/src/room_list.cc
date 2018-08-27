@@ -21,7 +21,8 @@
 
 using std::string;
 using std::vector;
-using std::unique_ptr;
+using std::shared_ptr;
+
 using ngincc::core::plugin_manager;
 using ngincc::core::parallel::pipeline;
 using ngincc::core::buffer_coder;
@@ -130,7 +131,7 @@ room_list::room_list(
     core_plug.plug_add(string(on_async_reply), "It responds to asynchronous response from db.", std::move(async_reply_callback));
 
     // register chat command
-    std::function<int(vector<string>&,chat_connection&)> lookup_rooms_cb = std::bind(&room_list::lookup_rooms, this, _1, _2);
+    std::function<int(vector<string>&, chat_connection&)> lookup_rooms_cb = std::bind(&room_list::lookup_rooms, this, _1, _2);
     chat_plug.plug_add("state/logged_in/rooms", "Dump list of chat-rooms", std::move(lookup_rooms_cb));
     chat_plug.plug_add("state/in_room/rooms", "Dump list of chat-rooms", std::move(lookup_rooms_cb));
 }

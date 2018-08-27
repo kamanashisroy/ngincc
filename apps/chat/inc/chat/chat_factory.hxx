@@ -21,6 +21,7 @@ namespace ngincc {
     }
     namespace apps {
         namespace chat {
+            class broadcast_room_module;
             class chat_factory {
             public:
                 chat_factory(
@@ -28,13 +29,15 @@ namespace ngincc {
                     , ngincc::core::plugin_manager &chat_plug
                     , ngincc::core::event_loop& eloop
                     , ngincc::net::raw_pipeline& raw_pipe
-                    , ngincc::db::async_db& adb_client);
+                    , ngincc::db::async_db& adb_client
+                    , broadcast_room_module& bcast_module
+                );
                 ~chat_factory();
 
                 //! \addgroup chat connection list
                 //! {@ 
-                std::unique_ptr<chat_connection>& create_chat_connection(int fd, connection_state*state);
-                std::unique_ptr<chat_connection>& get_chat(long long token);
+                std::shared_ptr<chat_connection>& create_chat_connection(int fd, connection_state*state);
+                std::shared_ptr<chat_connection>& get_chat(long long token);
                 bool has_chat(long long token);
                 int close_all();
                 //! @}
@@ -47,8 +50,7 @@ namespace ngincc {
                 ngincc::core::event_loop &eloop;
                 ngincc::net::raw_pipeline &raw_pipe;
                 ngincc::db::async_db& adb_client;
-                //! TODO instead of unique_ptr, use object-pool
-                std::vector<std::unique_ptr<chat_connection> > clients;
+                std::vector<std::shared_ptr<chat_connection> > clients;
                 connection_state_connected connected_state;
                 connection_state_logged_in logged_in_state;
                 connection_state_in_room in_room_state;

@@ -18,7 +18,7 @@ using std::ostringstream;
 using std::istringstream;
 using std::endl;
 using std::vector;
-using std::unique_ptr;
+using std::shared_ptr;
 using std::stringstream;
 using ngincc::core::plugin_manager;
 using ngincc::core::buffer_coder;
@@ -63,8 +63,7 @@ int connection_state_connected::process_chat_request(
         command_reader >> discard_forward_slash;
 
         std::vector<string> command_args;
-        char delim;
-        for(string token; command_reader >> token; command_reader >> delim) {
+        for(string token; command_reader >> token;) {
             if(token.size() == 0) {
                 continue;
             }
@@ -166,7 +165,7 @@ int connection_state_connected::on_login_reply(buffer_coder& recv_buffer) {
 		return 0;
 	}
     if(factory.has_chat(reply_token)) {
-        unique_ptr<chat_connection>& chat = factory.get_chat(reply_token);
+        shared_ptr<chat_connection>& chat = factory.get_chat(reply_token);
         if(chat->in_state(typeid(connection_state_connected))) {
             if(reply_status) {
                 chat->set_login_name(name);

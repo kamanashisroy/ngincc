@@ -12,13 +12,14 @@
 #include "async_db.hxx"
 #include "chat/chat_connection.hxx"
 #include "chat/chat_factory.hxx"
+#include "chat/broadcast_room.hxx"
 #include "chat/room_list.hxx"
 #include "chat/join_room.hxx"
 
 using std::string;
 using std::vector;
 using std::endl;
-using std::unique_ptr;
+using std::shared_ptr;
 using std::istringstream;
 using std::stringstream;
 
@@ -29,6 +30,7 @@ using ngincc::db::async_db;
 using ngincc::apps::chat::chat_connection;
 using ngincc::apps::chat::connection_state;
 using ngincc::apps::chat::connection_state_logged_in;
+using ngincc::apps::chat::broadcast_room_module;
 using ngincc::apps::chat::join_room;
 using namespace std::placeholders;
 
@@ -56,11 +58,11 @@ static int chat_join_transfer(struct chat_connection*chat, aroop_txt_t*room, int
 }
 #endif
 
-int join_room::join_helper(unique_ptr<chat_connection>& chat, string& room, int pid) {
+int join_room::join_helper(shared_ptr<chat_connection>& chat, string& room, int pid) {
 	// check if it is same process
 	//printf("target pid=%d, my pid = %d\n", pid, getpid());
 	if(pid != getpid()) {
-        chat->net_send( "This transfer feature is not available now! Sorry, please try another room.", 0);
+        chat->net_send( "This transfer feature is not available now! Sorry, please try another room.\n", 0);
 #if 0
 		chat_join_transfer(chat, room, pid);
 #endif
@@ -68,7 +70,7 @@ int join_room::join_helper(unique_ptr<chat_connection>& chat, string& room, int 
 	}
 	//printf("assiging to room %s\n", aroop_txt_to_string(room));
 	// otherwise assign to the room
-    // TODO broadcast.room_join(chat,room);
+    bcast_module.join(chat,room);
     chat->set_state(factory.get_in_room());
 	return 0;
 }
@@ -95,6 +97,7 @@ int join_room::on_target_pid_retrieval(buffer_coder& recv_buffer) {
     string service;
     uint32_t reply_token;
     uint32_t reply_status;
+    string pid_str;
     string room_key;
     string room_object;
 	// 0 = srcpid, 1 = command, 2 = token, 3 = success, 4 = key, 5 = newvalue
@@ -113,23 +116,21 @@ int join_room::on_target_pid_retrieval(buffer_coder& recv_buffer) {
     coder >>= reply_token;
     coder >>= reply_status;
     coder >>= room_key;
-    coder >>= room_object;
+    coder >>= pid_str;
 
-    int pid = 0;
-    [[maybe_unused]] char delim = ' ';
-    string room_name;
-    istringstream room_reader(room_object);
-    room_reader >> pid >> delim >> room_name;
+    string room_name = room_key.substr(room_list::ROOM_PREFIX.size());
+	syslog(LOG_NOTICE, "Joining (%s)..............  %d to %s\n", room_key.c_str(), reply_token, room_object.c_str());
     
+    uint32_t pid = (pid_str.size() != 0) ? stoi(pid_str) : 0;
 	//syslog(LOG_NOTICE, "------------ ..............  \n");
-	//syslog(LOG_NOTICE, "Joining ..............  %d to %s\n", reply_token, room_key.c_str());
+	syslog(LOG_NOTICE, "Joining ..............  %d to %s\n", pid, room_name.c_str());
 	//chat_room_convert_room_from_room_pid_key(room_key, room_val);
 	//syslog(LOG_NOTICE, "Joining ..............  %d to %s\n", cb_token, room.c_str());
     if(factory.has_chat(reply_token)) {
-        unique_ptr<chat_connection>& chat = factory.get_chat(reply_token);
+        shared_ptr<chat_connection>& chat = factory.get_chat(reply_token);
         if(chat->in_state(typeid(connection_state_logged_in))) {
             if(reply_status && room_name.size() != 0) {
-		        chat->net_send("Trying ...", ngincc::net::net_channel::NET_MSG_MORE);
+		        chat->net_send("Trying ...\n", ngincc::net::net_channel::NET_MSG_MORE);
 		        join_helper(chat, room_name, pid);
             } else {
 			    chat->net_send("The room is not avilable\n", 0);
@@ -146,7 +147,10 @@ int join_room::process_join(vector<string>& cmd_args, chat_connection& chat) {
 	    chat.net_send("The room is not avilable\n", 0);
         return 0;
     }
-	chat.net_send("Trying ...\n", MSG_MORE);
+
+	chat.net_send("Trying ...", MSG_MORE);
+	chat.net_send(cmd_args[1], MSG_MORE);
+
     stringstream builder;
     builder << room_list::ROOM_PREFIX << cmd_args[1];
     adb_client.get( chat.get_token(), on_asyncchat_room_pid, builder.str());
@@ -158,14 +162,15 @@ join_room::join_room(
     , plugin_manager& chat_plug
     , async_db& adb_client
     , chat_factory& factory
+    , broadcast_room_module& bcast_module
     ) : core_plug(core_plug)
     , chat_plug(chat_plug)
     , adb_client(adb_client)
     , factory(factory)
-    {
+    , bcast_module(bcast_module) {
 
     // make join command
-    std::function<int(vector<string>&,chat_connection&)> join_cb = std::bind(&join_room::process_join, this, _1, _2);
+    std::function<int(vector<string>&, chat_connection&)> join_cb = std::bind(&join_room::process_join, this, _1, _2);
     //chat_plug.plug_add("state/in_room/join", "Join a room", std::move(join_cb));
     chat_plug.plug_add("state/logged_in/join", "Join a room", std::move(join_cb));
 

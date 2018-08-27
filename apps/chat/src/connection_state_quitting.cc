@@ -36,8 +36,7 @@ int connection_state_quitting::process_chat_request(
         command_reader >> discard_forward_slash;
 
         std::vector<string> command_args;
-        char delim;
-        for(string token; command_reader >> token; command_reader >> delim) {
+        for(string token; command_reader >> token;) {
             if(token.size() == 0) {
                 continue;
             }

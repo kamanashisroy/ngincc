@@ -6,6 +6,7 @@
 #include "async_db.hxx"
 #include "net_subsystem.hxx"
 #include "chat/chat_factory.hxx"
+#include "chat/broadcast_room.hxx"
 #include "chat/room_list.hxx"
 #include "chat/room_list_master.hxx"
 #include "chat/join_room.hxx"
@@ -23,6 +24,7 @@ namespace ngincc {
                 ngincc::db::async_db_master adb_master;
                 ngincc::db::async_db adb_client;
                 ngincc::core::plugin_manager chat_plug;
+                ngincc::apps::chat::broadcast_room_module bcast_module;
                 ngincc::apps::chat::chat_factory factory;
                 ngincc::apps::chat::chat_server_stack chat_stack;
                 // chat room

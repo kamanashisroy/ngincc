@@ -21,6 +21,7 @@ namespace ngincc {
             // forward declaration
             class chat_connection;
             class chat_factory;
+            class broadcast_room_module;
             //! Connection state supports different behavior for different
             //! chat state
             class connection_state {
@@ -75,6 +76,7 @@ namespace ngincc {
                     ngincc::core::plugin_manager &chat_plug
                     , chat_factory& factory
                     , ngincc::db::async_db& adb_client
+                    , broadcast_room_module& bcast_module
                 );
                 virtual ~connection_state_in_room() override;
                 virtual int process_chat_request(chat_connection& chat, const std::string& request) override;
@@ -83,6 +85,7 @@ namespace ngincc {
                 ngincc::core::plugin_manager &chat_plug;
                 chat_factory& factory;
                 ngincc::db::async_db& adb_client;
+                broadcast_room_module& bcast_module;
             };
             class connection_state_quitting final : public connection_state {
             public:

@@ -8,6 +8,7 @@
 #include "plugin_manager.hxx"
 #include "chat/chat_connection.hxx"
 #include "chat/chat_factory.hxx"
+#include "chat/broadcast_room.hxx"
 #include "chat/quit.hxx"
 
 using std::string;
@@ -17,20 +18,28 @@ using std::ostringstream;
 using ngincc::core::plugin_manager;
 using ngincc::apps::chat::chat_connection;
 using ngincc::apps::chat::connection_state;
+using ngincc::apps::chat::connection_state_quitting;
+using ngincc::apps::chat::chat_factory;
+using ngincc::apps::chat::broadcast_room_module;
 using ngincc::apps::chat::quit;
 using namespace std::placeholders;
 
 
 int quit::process_quit(vector<string>& cmd_args, chat_connection& chat) {
 	// TODO broadcast_room_leave(chat);
-	// chat->set_state(chat, CHAT_QUIT);
-    // TODO chat.set_state(factory.get_quitting);
-	// TODO logoff_user(chat);
+    bcast_module.leave(chat);
+    chat.set_state(factory.get_quitting());
 	chat.net_send("Bye\n", 0);
 	return -1;
 }
 
-quit::quit(plugin_manager& chat_plug) : chat_plug(chat_plug) {
+quit::quit(
+    plugin_manager& chat_plug
+    , chat_factory& factory
+    , broadcast_room_module& bcast_module
+    ) : chat_plug(chat_plug)
+    , factory(factory)
+    , bcast_module(bcast_module) {
     
     // make quit command
     std::function<int(vector<string>&,chat_connection&)> quit_cb = std::bind(&quit::process_quit, this, _1, _2);

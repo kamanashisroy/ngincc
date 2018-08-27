@@ -14,7 +14,7 @@
 //#include "chat.h"
 //#include "chat/chat_plugin_manager.h"
 #include "chat/room_list.hxx"
-//#include "chat/broadcast.h"
+#include "chat/broadcast_room.hxx"
 #include "chat/room_list_master.hxx"
 
 using std::string;
@@ -29,6 +29,8 @@ using ngincc::core::buffer_coder;
 using ngincc::core::binary_coder;
 using ngincc::core::parallel::pipeline;
 using ngincc::db::async_db_master;
+using ngincc::db::async_db;
+using ngincc::apps::chat::broadcast_room_module;
 using ngincc::apps::chat::room_list;
 using ngincc::apps::chat::room_list_master;
 using namespace std::placeholders;
@@ -74,8 +76,7 @@ int room_list_master::list_rooms_hook(buffer_coder& recv_buffer) {
     adb_master.noasync_get(ACTIVE_ROOMS_KEY, active_rooms);
 
     istringstream room_reader(active_rooms);
-    char delim = ' ';
-    for(string xroom; room_reader >> xroom; room_reader >> delim) {
+    for(string xroom; room_reader >> xroom;) {
         if(xroom.size() == 0) {
             continue;
         }
@@ -111,12 +112,13 @@ int room_list_master::make_room(unsigned int index) {
     ostringstream builder;
     builder << room_list::ROOM_PREFIX << default_rooms[index];
 
-    ostringstream object_builder;
-    object_builder << getpid() << ' ' << default_rooms[index];
-    adb_master.noasync_set(builder.str(), object_builder.str());
+    //ostringstream object_builder;
+    //object_builder << getpid() << ' ' << default_rooms[index];
+    //adb_master.noasync_set(builder.str(), object_builder.str());
+    adb_client.set_if_null(-1, async_db::empty_hook, builder.str(), getpid());
 
 	// create the room constructs
-	// TODO broadcast_add_room(&room_name);
+	bcast_module.add_room(default_rooms[index]);
 	return 0;
 }
 
@@ -135,11 +137,15 @@ int room_list_master::child_after_hook(int pid) {
 room_list_master::room_list_master(
     plugin_manager& core_plug
     , async_db_master& adb_master
+    , async_db& adb_client
     , pipeline& core_pipe
+    , broadcast_room_module& bcast_module
     ) : internal_child_count(0)
     , core_plug(core_plug)
     , adb_master(adb_master)
-    , core_pipe(core_pipe) {
+    , adb_client(adb_client)
+    , core_pipe(core_pipe)
+    , bcast_module(bcast_module) {
 
     std::function<int(int)> fork_cb = std::bind(&room_list_master::parent_after_hook, this, _1);
 	core_plug.plug_add("fork/parent/after", "It assigns a room to a worker process.", std::move(fork_cb));

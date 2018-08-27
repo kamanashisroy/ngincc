@@ -17,6 +17,7 @@ using ngincc::core::event_loop;
 using ngincc::db::async_db;
 using ngincc::net::raw_pipeline;
 using ngincc::apps::chat::chat_factory;
+using ngincc::apps::chat::broadcast_room_module;
 using ngincc::apps::chat::connection_state;
 using ngincc::apps::chat::connection_state_connected;
 using ngincc::apps::chat::connection_state_logged_in;
@@ -28,14 +29,14 @@ bool chat_factory::has_chat(long long token) {
     return (clients.size() > (unsigned long)token) && clients[token];
 }
 
-std::unique_ptr<chat_connection>& chat_factory::get_chat(long long token) {
+std::shared_ptr<chat_connection>& chat_factory::get_chat(long long token) {
     if(has_chat(token)) {
         return clients[token];
     }
     throw std::range_error("chat-connection not found");
 }
 
-std::unique_ptr<chat_connection>& chat_factory::create_chat_connection(int fd, connection_state*state) {
+std::shared_ptr<chat_connection>& chat_factory::create_chat_connection(int fd, connection_state*state) {
     // find an empty slot
     bool added = false;
     long long token = 0;
@@ -88,12 +89,13 @@ chat_factory::chat_factory(
     , event_loop& eloop
     , raw_pipeline& raw_pipe
     , async_db& adb_client
+    , broadcast_room_module& bcast_module
     ) : eloop(eloop)
     , raw_pipe(raw_pipe)
     , adb_client(adb_client)
     , connected_state(core_plug, chat_plug, *this, adb_client)
     , logged_in_state(chat_plug, *this, adb_client)
-    , in_room_state(chat_plug, *this, adb_client)
+    , in_room_state(chat_plug, *this, adb_client, bcast_module)
     , quitting_state(chat_plug)
      {
     std::function<int(vector<string>&, ostringstream&)> show_callback
